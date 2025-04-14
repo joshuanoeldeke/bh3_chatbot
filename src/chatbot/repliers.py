@@ -14,7 +14,7 @@ class Replier:
     def reply(self, request: str) -> Reply:
         return EmptyReply()
 
-class DummyReplier(Replier):
+class HiReplier(Replier):
     def reply(self, request: str) -> Reply:
         stopOption = "Chat beenden"
 

@@ -1,6 +1,6 @@
 import chatbot
 
-replier = chatbot.repliers.DummyReplier()
+replier = chatbot.repliers.HiReplier()
 matcher = chatbot.matchers.StringMatcher()
 chat = chatbot.chat.Chat(replier, matcher)
 
