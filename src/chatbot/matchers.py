@@ -9,8 +9,7 @@ class StringMatcher(Matcher):
     """
     Simply finds the first choice explicitly mentioned in a request
     """
-    # TODO: Type = array of strings
-    def match(self, request: str, choices, default: str = "") -> str:
+    def match(self, request: str, choices: list[str], default: str = "") -> str:
         for choice in choices:
             if choice in request:
                 return choice
