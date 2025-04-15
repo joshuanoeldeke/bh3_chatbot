@@ -8,9 +8,10 @@ class ChatChoiceCompleter(Completer):
 
     def get_completions(self, document, complete_event):
         word = document.text_before_cursor
-        for choice in self.chat.last_reply.choices:
-            if choice.lower().startswith(word.lower()):
-                yield Completion(choice, start_position=-len(word))
+        for node in self.chat.current_nodes:
+            keyword = node.content.split(";")[0]
+            if keyword.lower().startswith(word.lower()):
+                yield Completion(keyword, start_position=-len(word))
 
 class Cli:
     def __init__(self, chat) -> None:

@@ -4,21 +4,35 @@ from .types import *
 
 class Replier:
     """
-    A replier takes a request and replies with a string and a set
-    of choices to react to the reply.
+    A replier takes a request and replies with a list of chatnodes.
+    Either a list with one output chatnode is returned.
+    Or a list with different choice chatnodes, upon which the user can choce one.
     """
-    def __init__(self) -> None:
-        self.END_REPLY = Reply("Schönen Tag noch!", [])
+    @abstractmethod
+    def reply(self, request: ChatNode) -> list[ChatNode]:
+        return []
 
     @abstractmethod
-    def reply(self, request: str) -> Reply:
-        return EmptyReply()
+    def get_start(self) -> list[ChatNode]:
+        return []
 
-class HiReplier(Replier):
-    def reply(self, request: str) -> Reply:
-        stopOption = "Chat beenden"
+# class HiReplier(Replier):
+#     def reply(self, request: str) -> Reply:
+#         stopOption = "Chat beenden"
+#
+#         if request == stopOption:
+#             return self.END_REPLY
+#
+#         return Reply("Hi!", [stopOption])
 
-        if request == stopOption:
-            return self.END_REPLY
+class GraphReplier(Replier):
+    def __init__(self, graph: ChatNode) -> None:
+        self.graph = graph
 
-        return Reply("Hi!", [stopOption])
+    def reply(self, request: ChatNode) -> list[ChatNode]:
+        return request.children
+
+    def get_start(self) -> list[ChatNode]:
+        start = ChatNode("", "", "")
+        start.children = [self.graph]
+        return [start]

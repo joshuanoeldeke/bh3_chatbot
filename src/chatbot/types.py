@@ -1,3 +1,16 @@
+from typing import Self
+
+class ChatNode:
+    def __init__(self, name: str, type: str, content: str) -> None:
+        self.name = name
+        self.type = type
+        self.content = content
+        self.children = []
+
+    def addChild(self, child: Self) -> Self:
+        self.children.append(child)
+        return child
+
 class Reply:
     def __init__(self, msg: str, choices: list[str]):
         self.msg = msg
