@@ -24,8 +24,13 @@ class ChatVisualizer:
                 
                 # Set node style based on type
                 if node.type == "o":
+                    # Output node (bot messages)
                     dot.node(node.name, f'"{node.content}"', shape='box', style='filled', fillcolor='lightblue')
+                elif node.type == "i":
+                    # Input node (user input fields)
+                    dot.node(node.name, f'"{node.content}"', shape='parallelogram', style='filled', fillcolor='lightyellow')
                 else:  # "c" for choice nodes
+                    # Choice node (user selections)
                     dot.node(node.name, f'"{node.content}"', shape='oval', style='filled', fillcolor='lightgreen')
                 
                 # Add edges to children
@@ -33,8 +38,19 @@ class ChatVisualizer:
                     dot.edge(node.name, child.name)
                     add_nodes_and_edges(child, visited)
             
-            # Start with the root node
-            add_nodes_and_edges(root_node)
+            # Check if we received a dictionary of nodes or a single root node
+            if isinstance(root_node, dict):
+                # Find the 'start' node as root
+                if 'start' in root_node:
+                    root = root_node['start']
+                    add_nodes_and_edges(root)
+                else:
+                    # Process all nodes in the dictionary to ensure we cover the entire graph
+                    for node in root_node.values():
+                        add_nodes_and_edges(node)
+            else:
+                # Start with the single root node
+                add_nodes_and_edges(root_node)
             
             # Render the graph
             dot.render(output_file, format=self.output_format, cleanup=True)

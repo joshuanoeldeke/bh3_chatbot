@@ -30,6 +30,11 @@ for from_name, to_name in edges:
 
 conn.close()
 
+# Create visualization for the conversation graph
+from chatbot.visualizer import ChatVisualizer
+visualizer = ChatVisualizer()
+visualizer.visualize(node_map)
+
 # Let's use the graph for our chatbot
 replier = chatbot.repliers.GraphReplier(node_map["start"])
 matcher = chatbot.matchers.StringMatcher()
