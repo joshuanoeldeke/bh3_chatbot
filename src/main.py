@@ -1,22 +1,37 @@
 import chatbot
-
 from chatbot import ChatNode
 
-# Defining a simple test graph
-chatGraph = ChatNode("start", "o", "Guten Morgen!")
-stimmung_fragen = chatGraph.addChild(ChatNode("stimmung_fragen", "o", "Wie geht es dir?"))
+import sqlite3
+import os
 
-stimmung_gut = stimmung_fragen.addChild(ChatNode("stimmung_gut", "c", "Gut"))
-stimmung_schlecht = stimmung_fragen.addChild(ChatNode("stimmung_schlecht", "c", "Schlecht"))
-stimmung_neutral = stimmung_fragen.addChild(ChatNode("stimmung_neutral", "c", "Neutral"))
+# Import conversation graph
+node_map: dict[str, ChatNode] = {}
 
-stimmung_antwort = ChatNode("stimmung_antwort", "o", "Das ist schön zu hören!")
-stimmung_gut.addChild(stimmung_antwort)
-stimmung_schlecht.addChild(stimmung_antwort)
-stimmung_neutral.addChild(stimmung_antwort)
+db_path = os.path.join(os.path.dirname(__file__), "../data/bugland.db")
+
+conn = sqlite3.connect(db_path)
+cursor = conn.cursor()
+
+# Load all nodes
+cursor.execute("SELECT name, content, type FROM chat_nodes")
+rows = cursor.fetchall()
+
+for name, content, typ in rows:
+    node_map[name] = ChatNode(name, typ, content)
+
+# Load all edges
+cursor.execute("SELECT from_name, to_name FROM chat_edges")
+edges = cursor.fetchall()
+
+for from_name, to_name in edges:
+    parent = node_map[from_name]
+    child = node_map[to_name]
+    parent.addChild(child)
+
+conn.close()
 
 # Let's use the graph for our chatbot
-replier = chatbot.repliers.GraphReplier(chatGraph)
+replier = chatbot.repliers.GraphReplier(node_map["start"])
 matcher = chatbot.matchers.StringMatcher()
 chat = chatbot.chat.Chat(replier, matcher)
 
