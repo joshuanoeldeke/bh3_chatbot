@@ -46,3 +46,6 @@ while (nodes := chat.advance(request)):
             print(f"Chatbot: {nodes[0].content}")
         case _:
             request = chat_cli.input("You: ")
+
+# Log the conversation
+# Find the chat log in chat.log

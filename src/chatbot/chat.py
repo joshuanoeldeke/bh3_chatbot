@@ -6,11 +6,13 @@ class Chat:
         self.replier = replier
         self.matcher = matcher
         self.current_nodes = replier.get_start()
+        self.log = []
         
         self.START = ""
 
     def advance(self, request: str) -> list[ChatNode]:
         node = self.matcher.match(request, self.current_nodes)
+        self.log.append(node)
 
         # Insert request string to node if input
         if node.type == 'i': node.content = request
