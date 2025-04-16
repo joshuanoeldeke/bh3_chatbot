@@ -22,13 +22,21 @@ INSERT INTO chat_nodes (name, content, type) VALUES
     ('business', 'business;firma;gewerbe', 'c'),
 
     -- Produktabfrage
-    ('produkt', 'Um welches Produkt geht es?', 'o'),
+    ('produkt', 'Worum geht es?', 'o'),
 
     -- Produktauswahl
+    ('frage', 'frage;allgemein;allgemeine', 'c'),
     ('cleanbug', 'cleanbug;roboter;reinigungsroboter', 'c'),
     ('windowfly', 'windowfly;fensterroboter', 'c'),
     ('gardenbeetle', 'gardenbeetle;gartenroboter;unkraut', 'c'),
     ('sonstiges_produkt', 'sonstiges;anderes', 'c'),
+
+    -- Allgemeine Fragen
+    ('informationen', 'Möchtest du mehr über Vertragszeiten oder die Anmeldung als Business-Kunde erfahren?', 'o'),
+    ('vertrag', 'Vertragszeiten;Vertragsdetails', 'c'),
+    ('business_werden', 'Wie wird man Business-Kunde?', 'c'),
+    ('vertrag_details', 'Die Vertragslaufzeit beträgt 12 Monate. Du kannst jederzeit in einem Jahr kündigen.', 'o'),
+    ('business_details', 'Um Business-Kunde zu werden, musst du dich auf unserer Webseite registrieren und ein Gewerbe nachweisen.', 'o'),
 
     -- Problemabfrage
     ('problem', 'Was ist das Problem?', 'o'),
@@ -64,30 +72,51 @@ INSERT INTO chat_nodes (name, content, type) VALUES
 
     -- Ticket-Eröffnung
     ('ticket_eroeffnen', 'Ich werde ein Ticket für dich eröffnen. Bitte nenne mir deine E-Mail-Adresse.', 'o'),
-    ('ticket_eroeffnen_email', 'E-Mail-Adresse', 'i'),
+    ('ticket_eroeffnen_email', '', 'i'),
     ('ticket_eroeffnen_email_gesendet', 'Das Ticket wurde eröffnet. Du solltest in Kürze eine E-Mail erhalten. Deine Ticket-Nummer ist: {ticket_number}', 'o'),
 
     -- Ende
-    ('ende', 'Einen schönen Tag dir noch!', 'o');
+    ('ende', 'Einen schönen Tag dir noch!', 'o'),
+
+    -- Feedback geben
+    ('feedback', 'Möchtest du uns Feedback zum Chat geben?', 'o'),
+    ('feedback_ja', 'Ja;Feedback geben', 'c'),
+    ('feedback_nein', 'Nein;kein Feedback', 'c'),
+    ('feedback_eingabe', '', 'i'),
+
+    -- Rückmeldung zum Feedback
+    ('feedback_gesendet', 'Danke für dein Feedback!', 'o');
 
 INSERT INTO chat_edges (from_name, to_name) VALUES
     -- Start-Auswahl: Kunde
     ('start', 'private'),
     ('start', 'business'),
 
-    -- Produkt-Auswahl
+    -- Kunden-Auswahl
     ('private', 'produkt'),
     ('business', 'produkt'),
+
+    -- Produkt-Auswahl
+    ('produkt', 'frage'),
     ('produkt', 'cleanbug'),
     ('produkt', 'windowfly'),
     ('produkt', 'gardenbeetle'),
     ('produkt', 'sonstiges_produkt'),
 
     -- Problem-Auswahl nach Produkt
+    ('frage', 'informationen'),
     ('cleanbug', 'problem'),
     ('windowfly', 'problem'),
     ('gardenbeetle', 'problem'),
     ('sonstiges_produkt', 'problem'),
+
+    -- Frage Pfade
+    ('informationen', 'vertrag'),
+    ('informationen', 'business_werden'),
+    ('vertrag', 'vertrag_details'),
+    ('business_werden', 'business_details'),
+    ('vertrag_details', 'konnte_helfen'),
+    ('business_details', 'konnte_helfen'),
 
     -- Cleanbug Probleme
     ('problem', 'problem_cleanbug_1'),
@@ -109,7 +138,7 @@ INSERT INTO chat_edges (from_name, to_name) VALUES
 
     -- Sonstiges Problem → direkt zur Ticket-Eröffnung
     ('problem', 'problem_sonstiges'),
-    ('problem_sonstiges', 'loesung_sonstiges'),
+    ('problem_sonstiges', 'ticket_eroeffnen'),
 
     -- Nach jeder Lösung zur Rückfrage
     ('loesung_cleanbug_1', 'konnte_helfen'),
@@ -128,6 +157,16 @@ INSERT INTO chat_edges (from_name, to_name) VALUES
     ('ticket_eroeffnen', 'ticket_eroeffnen_email'),
     ('ticket_eroeffnen_email', 'ticket_eroeffnen_email_gesendet'),
 
-    -- Abschließend: Ende
-    ('ja', 'ende'),
-    ('ticket_eroeffnen_email_gesendet', 'ende');
+    -- Abschluss nach "Ja"
+    ('ja', 'feedback'),
+    ('ticket_eroeffnen_email_gesendet', 'feedback'),
+
+    -- Feedback Ja/Nein
+    ('feedback', 'feedback_ja'),
+    ('feedback', 'feedback_nein'),
+
+    -- Feedback gesendet
+    ('feedback_ja', 'feedback_eingabe'),
+    ('feedback_eingabe', 'feedback_gesendet'),
+    ('feedback_nein', 'ende'),
+    ('feedback_gesendet', 'ende');
