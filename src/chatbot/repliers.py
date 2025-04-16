@@ -16,14 +16,17 @@ class Replier:
     def get_start(self) -> list[ChatNode]:
         return []
 
-# class HiReplier(Replier):
-#     def reply(self, request: str) -> Reply:
-#         stopOption = "Chat beenden"
-#
-#         if request == stopOption:
-#             return self.END_REPLY
-#
-#         return Reply("Hi!", [stopOption])
+class HiReplier(Replier):
+    def __init__(self) -> None:
+        self.res = ChatNode("hi", "o", "Hi!")
+
+    def reply(self, request: ChatNode) -> list[ChatNode]:
+        if request.content == "ende":
+            return []
+        return [self.res]
+
+    def get_start(self) -> list[ChatNode]:
+        return [ChatNode("start", "o", "Hi!")]
 
 class GraphReplier(Replier):
     def __init__(self, graph: ChatNode) -> None:
