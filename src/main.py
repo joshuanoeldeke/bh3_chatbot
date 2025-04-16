@@ -4,13 +4,23 @@ from chatbot import ChatNode
 import sqlite3
 import os
 
-# Import conversation graph
-node_map: dict[str, ChatNode] = {}
-
 db_path = os.path.join(os.path.dirname(__file__), "../data/bugland.db")
 
+# DB connection
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
+
+# Function to open a ticket
+def open_ticket(log: list[ChatNode], email: str) -> None:
+    output = ""
+    for node in log:
+        if node.type == "i":
+            output += node.name + ": " + node.content + "\n"
+
+    cursor.execute("INSERT INTO tickets (content, email) VALUES (?, ?)", (output, email))
+
+# Import conversation graph
+node_map: dict[str, ChatNode] = {}
 
 # Load all nodes
 cursor.execute("SELECT name, content, type FROM chat_nodes")
@@ -27,8 +37,6 @@ for from_name, to_name in edges:
     parent = node_map[from_name]
     child = node_map[to_name]
     parent.addChild(child)
-
-conn.close()
 
 # Let's use the graph for our chatbot
 replier = chatbot.repliers.GraphReplier(node_map["start"])
@@ -47,5 +55,10 @@ while (nodes := chat.advance(request)):
         case _:
             request = chat_cli.input("You: ")
 
-# Log the conversation
 # Find the chat log in chat.log
+for node in chat.log:
+    if (node.name == "ticket_eroeffnen_email"):
+        open_ticket(chat.log, node.content)
+
+conn.commit()
+conn.close()
