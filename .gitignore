@@ -175,6 +175,3 @@ cython_debug/
 
 # Mac specific files
 .DS_Store
-
-# PNG file(s) (visualizer)
-*.png
