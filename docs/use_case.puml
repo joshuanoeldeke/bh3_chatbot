@@ -1,0 +1,46 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor Kunde as c
+actor Business_Kunde as bc
+bc --|> c
+
+actor Support as s
+actor QA as qa
+
+usecase "Produkt bestellen" as pb
+usecase "Support-Ticket erstellen" as ticket
+usecase "Informationen finden" as info
+usecase "Problem melden" as pm
+usecase "Chatbot-Logs einsehen" as logs
+usecase "Tickets einsehen" as readticket
+usecase "Chatbot-Graph aktualisieren" as cga
+usecase "Chat-Feedback geben" as cfg
+
+' Use Case Erweiterungen
+ticket ..> pm : <<extend>>\n(nicht gelöst)
+
+' Notizen
+note right of logs
+    Beinhalten Statistiken
+endnote
+note right of readticket
+    Tickets: Beinhalten Informationen aus dem
+    Chat inkl. Input Daten (z.B. E-Mail)
+endnote
+
+' Verbindungen: Kunde
+c --> pb
+c --> pm
+c --> cfg
+c --> info
+
+' Verbindungen: Support
+s --> logs
+s --> readticket
+
+' Verbindungen: QA
+qa --> logs
+qa --> cga
+@enduml

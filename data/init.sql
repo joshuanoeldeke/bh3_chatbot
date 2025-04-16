@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS chat_edges (
 
 INSERT INTO chat_nodes (name, content, type) VALUES
     -- Begrüßung
-    ('start', 'Hallo. Ich bin der Support-Chatbot der XY Ltd. Bist du ein privater oder ein business Kunde?', 'o'),
+    ('start', 'Hallo. Ich bin der Support-Chatbot der Bugland Ltd. Bist du ein privater oder ein business Kunde?', 'o'),
 
     -- Auswahl Kunde
     ('private', 'privat;privater;ich bin privat', 'c'),
@@ -56,7 +56,6 @@ INSERT INTO chat_nodes (name, content, type) VALUES
 
     -- Sonstiges Problem
     ('problem_sonstiges', 'sonstiges;anderes problem', 'c'),
-    ('loesung_sonstiges', 'Danke für deine Nachricht. Ich werde ein Ticket für dich eröffnen.', 'o'),
 
     -- Rückfrage hilfreich
     ('konnte_helfen', 'Konnte ich dir damit weiterhelfen?', 'o'),
