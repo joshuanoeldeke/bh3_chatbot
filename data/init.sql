@@ -13,6 +13,16 @@ CREATE TABLE IF NOT EXISTS chat_edges (
     FOREIGN KEY (to_name) REFERENCES chat_nodes(name)
 );
 
+-- Ticket table
+CREATE TABLE IF NOT EXISTS tickets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'open',
+    content TEXT
+);
+
 INSERT INTO chat_nodes (name, content, type) VALUES
     -- Begrüßung
     ('start', 'Hallo. Ich bin der Support-Chatbot der Bugland Ltd. Bist du ein privater oder ein business Kunde?', 'o'),
@@ -73,7 +83,7 @@ INSERT INTO chat_nodes (name, content, type) VALUES
     -- Ticket-Eröffnung
     ('ticket_eroeffnen', 'Ich werde ein Ticket für dich eröffnen. Bitte nenne mir deine E-Mail-Adresse.', 'o'),
     ('ticket_eroeffnen_email', '', 'i'),
-    ('ticket_eroeffnen_email_gesendet', 'Das Ticket wurde eröffnet. Du solltest in Kürze eine E-Mail erhalten. Deine Ticket-Nummer ist: {ticket_number}', 'o'),
+    ('ticket_eroeffnen_email_gesendet', 'Das Ticket wurde eröffnet. Du solltest in Kürze eine E-Mail erhalten. Deine Ticket-Nummer ist: {ticket_number}. Bei Fragen melde dich an support@bugland.com', 'o'),
 
     -- Ende
     ('ende', 'Einen schönen Tag dir noch!', 'o'),
