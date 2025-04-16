@@ -11,5 +11,9 @@ class Chat:
 
     def advance(self, request: str) -> list[ChatNode]:
         node = self.matcher.match(request, self.current_nodes)
+
+        # Insert request string to node if input
+        if node.type == 'i': node.content = request
+
         self.current_nodes = self.replier.reply(node)
         return self.current_nodes
