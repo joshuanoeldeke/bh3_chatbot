@@ -73,7 +73,7 @@ INSERT INTO chat_nodes (name, content, type) VALUES
     -- Ticket-Eröffnung
     ('ticket_eroeffnen', 'Ich werde ein Ticket für dich eröffnen. Bitte nenne mir deine E-Mail-Adresse.', 'o'),
     ('ticket_eroeffnen_email', '', 'i'),
-    ('ticket_eroeffnen_email_gesendet', 'Das Ticket wurde eröffnet. Du solltest in Kürze eine E-Mail erhalten. Deine Ticket-Nummer ist: {ticket_number}', 'o'),
+    ('ticket_eroeffnen_email_gesendet', 'Das Ticket wurde eröffnet. Du solltest in Kürze eine E-Mail erhalten. Deine Ticket-Nummer ist: {ticket_number}. Bei Fragen melde dich an support@bugland.com', 'o'),
 
     -- Ende
     ('ende', 'Einen schönen Tag dir noch!', 'o'),
