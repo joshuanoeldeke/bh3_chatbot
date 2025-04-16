@@ -39,10 +39,52 @@ chat = chatbot.chat.Chat(replier, matcher)
 chat_cli = chatbot.Cli(chat)
 
 request = chat.START
+current_prompt = None
+current_nodes = None
+should_advance = True
 
-while (nodes := chat.advance(request)):
-    match nodes[0].type:
-        case "o":
-            print(f"Chatbot: {nodes[0].content}")
-        case _:
-            request = chat_cli.input("You: ")
+while True:
+    # Only advance if we should - this is the key fix
+    if should_advance:
+        nodes = chat.advance(request)
+        if not nodes:
+            break
+    else:
+        # Re-use the current nodes without advancing
+        nodes = current_nodes
+        should_advance = True  # Reset flag for next iteration
+    
+    # Output node - just display it and continue
+    if nodes[0].type == "o":
+        print(f"Chatbot: {nodes[0].content}")
+        current_prompt = None  # Reset prompt since we've advanced
+    else:
+        # If this is a new prompt (not a retry), save it
+        if current_prompt is None:
+            current_prompt = nodes[0].content
+            current_nodes = nodes
+        
+        # Get user input
+        user_input = chat_cli.input("You: ")
+        
+        # Check if input matches any of the available options
+        matched = False
+        for node in nodes:
+            if node.type == "o":
+                continue  # Skip output nodes
+                
+            keywords = node.content.split(";")
+            if any(keyword.lower() in user_input.lower() for keyword in keywords if keyword):
+                matched = True
+                break
+        
+        # If no match, set flag to not advance and continue with same nodes
+        if not matched:
+            print("Chatbot: Ich habe das nicht verstanden. Bitte versuche es noch einmal.")
+            should_advance = False
+            request = ""  # Empty request 
+            continue
+        
+        # Valid input, proceed normally
+        request = user_input
+        current_prompt = None
