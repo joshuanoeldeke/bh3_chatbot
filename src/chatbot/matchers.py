@@ -3,10 +3,14 @@ from abc import abstractmethod
 from .types import *
 
 import os
+import pathlib
 from gensim.models import KeyedVectors
 
 _MODEL = None
-model_path = os.environ.get("GLOVE_MODEL_PATH", "/Users/joshuanoeldeke/Developer/bh3_chatbot/glove.6B/glove.6B.50d.w2v.txt")
+model_path = os.environ.get(
+    "GLOVE_MODEL_PATH",
+    str(pathlib.Path(__file__).resolve().parents[2] / "glove.6B" / "glove.6B.50d.w2v.txt")
+)
 if os.path.isfile(model_path):
     _MODEL = KeyedVectors.load_word2vec_format(model_path, binary=False)
 
