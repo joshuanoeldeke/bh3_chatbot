@@ -3,6 +3,7 @@ from chatbot import ChatNode
 
 import sqlite3
 import os
+import argparse
 
 db_path = os.path.join(os.path.dirname(__file__), "../data/bugland.db")
 
@@ -46,19 +47,30 @@ chat = chatbot.chat.Chat(replier, matcher)
 # Helper CLI that adds tab-completion to reply choices provided by the chatbot
 chat_cli = chatbot.Cli(chat)
 
-request = chat.START
+if __name__ == "__main__":
+    # Main CLI for chatbot with optional debug
+    parser = argparse.ArgumentParser(description='Run chatbot with optional debug output')
+    parser.add_argument('--debug', action='store_true', help='Enable debug output of path taken')
+    args, unknown = parser.parse_known_args()
+    # Pass debug flag into environment
+    import builtins
+    builtins._CHAT_DEBUG = args.debug
 
-while (nodes := chat.advance(request)):
-    match nodes[0].type:
-        case "o":
-            print(f"Chatbot: {nodes[0].content}")
-        case _:
-            request = chat_cli.input("You: ")
+    request = chat.START
 
-# Find the chat log in chat.log
-for node in chat.log:
-    if (node.name == "ticket_eroeffnen_email"):
-        open_ticket(chat.log, node.content)
+    while (nodes := chat.advance(request)):
+        match nodes[0].type:
+            case "o":
+                print(f"Chatbot: {nodes[0].content}")
+            case _:
+                request = chat_cli.input("You: ")
+        if args.debug:
+            print("Path taken:", " -> ".join(node.name for node in chat.log))
 
-conn.commit()
-conn.close()
+    # Find the chat log in chat.log
+    for node in chat.log:
+        if (node.name == "ticket_eroeffnen_email"):
+            open_ticket(chat.log, node.content)
+
+    conn.commit()
+    conn.close()
