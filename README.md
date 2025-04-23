@@ -7,6 +7,7 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Gensim and GloVe Embeddings](#gensim-and-glove-embeddings)
 - [Database Initialization](#database-initialization)
 - [Project Structure](#project-structure)
 - [Usage](#usage)
@@ -32,7 +33,19 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 
 - Python 3.8 or newer
 - pip (installed with Python)
-- [Graphviz system package](https://graphviz.org/download/) (required by the Python `graphviz` module)
+- System dependencies:
+  - macOS:
+    - Homebrew (https://brew.sh/)
+    - pkg-config and OpenBLAS: `brew install pkg-config openblas`
+    - Graphviz: `brew install graphviz`
+  - Linux (Debian/Ubuntu):
+    - pkg-config, OpenBLAS, Graphviz, and build tools: `sudo apt-get update && sudo apt-get install -y pkg-config libopenblas-dev graphviz build-essential`
+  - Windows:
+    - Graphviz: Download & install from https://graphviz.org/download/ and add to your PATH
+    - Microsoft Visual C++ Build Tools: Install from https://aka.ms/vs/17/release/vc_redist.x64 (required for native Python extensions)
+- GloVe embeddings:
+  - Download from https://nlp.stanford.edu/projects/glove/
+  - Place the extracted files in the `glove.6B/` directory in the project root
 
 ## Installation
 
@@ -52,6 +65,26 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 3. Install Python dependencies:
    ```bash
    pip install -r requirements.txt
+   ```
+
+## Gensim and GloVe Embeddings
+
+Gensim requires converting GloVe text files to Word2Vec format before loading them:
+
+1. Ensure you have the GloVe files in `glove.6B/`.
+2. Install gensim if not included: `pip install gensim`
+3. Convert the embeddings using the built-in script:
+   ```bash
+   python -m gensim.scripts.glove2word2vec \
+       -i glove.6B/glove.6B.100d.txt \
+       -o glove.6B/glove.6B.100d.w2v.txt
+   ```
+4. Load the embeddings in your code:
+   ```python
+   from gensim.models import KeyedVectors
+   model = KeyedVectors.load_word2vec_format(
+       "glove.6B/glove.6B.100d.w2v.txt", binary=False
+   )
    ```
 
 ## Database Initialization

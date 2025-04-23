@@ -58,14 +58,20 @@ if __name__ == "__main__":
 
     request = chat.START
 
+    # Print initial chatbot prompt
+    for node in chat.current_nodes:
+        if node.type == "o":
+            print(f"Chatbot: {node.content}")
+
     while (nodes := chat.advance(request)):
+        if args.debug:
+            path = [node.name for node in chat.log]
+            print("Path taken:", " -> ".join(path))
         match nodes[0].type:
             case "o":
                 print(f"Chatbot: {nodes[0].content}")
             case _:
                 request = chat_cli.input("You: ")
-        if args.debug:
-            print("Path taken:", " -> ".join(node.name for node in chat.log))
 
     # Find the chat log in chat.log
     for node in chat.log:
@@ -74,3 +80,8 @@ if __name__ == "__main__":
 
     conn.commit()
     conn.close()
+    # Print semantic/exact match usage log
+    if args.debug and hasattr(chat.matcher, 'semantic_log'):
+        print("\n=== Match Usage Log ===")
+        for req, node_name, score in chat.matcher.semantic_log:
+            print(f"{req!r} -> {node_name} (score={score})")

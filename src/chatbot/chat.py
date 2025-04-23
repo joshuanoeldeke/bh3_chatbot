@@ -11,7 +11,11 @@ class Chat:
         self.START = ""
 
     def advance(self, request: str) -> list[ChatNode]:
-        node = self.matcher.match(request, self.current_nodes)
+        # Use semantic matching if available, otherwise fallback to exact match
+        try:
+            node = self.matcher.semantic_match(request, self.current_nodes, default=self.START)
+        except AttributeError:
+            node = self.matcher.match(request, self.current_nodes, default=self.START)
         self.log.append(node)
 
         # Insert request string to node if input
