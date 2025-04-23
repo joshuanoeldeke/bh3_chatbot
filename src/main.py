@@ -51,10 +51,19 @@ if __name__ == "__main__":
     # Main CLI for chatbot with optional debug
     parser = argparse.ArgumentParser(description='Run chatbot with optional debug output')
     parser.add_argument('--debug', action='store_true', help='Enable debug output of path taken')
+    parser.add_argument('--glove-dim', type=int, choices=[50,100,200,300], default=50,
+                        help='Dimension of GloVe embeddings to load (50,100,200,300)')
     args, unknown = parser.parse_known_args()
     # Pass debug flag into environment
     import builtins
     builtins._CHAT_DEBUG = args.debug
+    # Set GloVe model path relative to project root based on selected dimension
+    import os, pathlib
+    project_root = pathlib.Path(__file__).resolve().parents[1]
+    glove_file = project_root / 'glove.6B' / f'glove.6B.{args.glove_dim}d.w2v.txt'
+    os.environ['GLOVE_MODEL_PATH'] = str(glove_file)
+    # Inform which GloVe model is loaded
+    print(f"Using GloVe model: {glove_file.name}")
 
     request = chat.START
 
