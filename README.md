@@ -31,7 +31,8 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 
 ## Prerequisites
 
-- Python 3.8 or newer
+- Python 3.11.8 (minimum)
+- Recommended: Install and use pyenv to manage and pin Python versions. A `.python-version` file in the project root can specify `3.11.8` automatically for collaborators.
 - pip (installed with Python)
 - System dependencies:
   - macOS:
