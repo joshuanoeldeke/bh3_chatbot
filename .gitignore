@@ -179,3 +179,4 @@ cython_debug/
 .vscode
 
 glove.6B/
+glove.6b.zip
