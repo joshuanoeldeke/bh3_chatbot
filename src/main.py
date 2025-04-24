@@ -47,6 +47,14 @@ chat = chatbot.chat.Chat(replier, matcher)
 # Helper CLI that adds tab-completion to reply choices provided by the chatbot
 chat_cli = chatbot.Cli(chat)
 
+# Disable tqdm progress bars globally
+try:
+    import tqdm
+    tqdm.tqdm = lambda iterable=None, **kwargs: iterable if iterable is not None else []
+    tqdm.trange = lambda *args, **kwargs: range(*args)
+except ImportError:
+    pass
+
 if __name__ == "__main__":
     # Main CLI for chatbot with optional debug
     parser = argparse.ArgumentParser(description='Run chatbot with optional debug output')

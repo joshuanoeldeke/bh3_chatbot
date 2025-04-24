@@ -94,3 +94,32 @@ def test_conversation_flow(chat, mock_matcher, mock_replier):
     assert second_matched.content == second_request
     assert result2 == second_response
     assert chat.current_nodes == second_response
+
+def test_advance_fallback_to_match(chat):
+    """Test that advance falls back to match when semantic_match is unavailable"""
+    # Create a matcher with only match method
+    class OnlyMatchMatcher:
+        def match(self, request, nodes, default=""):
+            return nodes[0]
+    # Override chat matcher and replier
+    chat.matcher = OnlyMatchMatcher()
+    node = ChatNode("n", "o", "content")
+    chat.current_nodes = [node]
+    chat.replier.reply = lambda req: [node]
+
+    result = chat.advance("anything")
+    assert result == [node]
+    assert chat.log[-1] is node
+
+
+def test_chat_log_accumulates(chat, mock_matcher, mock_replier):
+    """Test that chat.log accumulates all matched nodes"""
+    first_node = ChatNode("first", "o", "First")
+    second_node = ChatNode("second", "o", "Second")
+    mock_matcher.semantic_match.return_value = first_node
+    mock_replier.reply.return_value = [first_node]
+    chat.advance("one")
+    mock_matcher.semantic_match.return_value = second_node
+    mock_replier.reply.return_value = [second_node]
+    chat.advance("two")
+    assert chat.log == [first_node, second_node]

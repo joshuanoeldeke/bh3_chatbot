@@ -5,6 +5,16 @@ from .types import *
 import os
 import pathlib
 from gensim.models import KeyedVectors
+import json
+
+# Disable tqdm progress bars used internally by gensim or other libraries
+try:
+    import tqdm
+    # Override tqdm.tqdm and trange to be no-ops
+    tqdm.tqdm = lambda iterable=None, **kwargs: iterable if iterable is not None else []
+    tqdm.trange = lambda *args, **kwargs: range(*args)
+except ImportError:
+    pass
 
 _MODEL = None
 model_path = os.environ.get(
@@ -42,6 +52,14 @@ class StringMatcher(Matcher):
         # Initialize semantic log
         if not hasattr(self, 'semantic_log'):
             self.semantic_log = []
+            # prepare log directory and semantic log file path
+            log_dir = os.environ.get('LOG_DIR', 'logs')
+            os.makedirs(log_dir, exist_ok=True)
+            self.semantic_log_path = os.environ.get('SEMANTIC_LOG_PATH', os.path.join(log_dir, 'semantic_log.json'))
+            # clear existing semantic log
+            with open(self.semantic_log_path, 'w') as f:
+                json.dump([], f, indent=2)
+
         # Fallback if no model available or no nodes
         if _MODEL is None or not nodes:
             return self.match(request, nodes, default)
@@ -60,6 +78,8 @@ class StringMatcher(Matcher):
             # log exact match usage
             self.semantic_log = getattr(self, 'semantic_log', [])
             self.semantic_log.append((request, matched_node.name, f"exact({matched_kw})"))
+            # persist semantic log
+            self._persist_semantic_log()
             # debug print
             import builtins
             if getattr(builtins, '_CHAT_DEBUG', False):
@@ -124,6 +144,8 @@ class StringMatcher(Matcher):
         matched = candidates[best_idx]
         # Log semantic match usage
         self.semantic_log.append((request, matched.name, best_score))
+        # persist semantic log
+        self._persist_semantic_log()
         # Debug print
         import builtins
         if getattr(builtins, '_CHAT_DEBUG', False):
@@ -133,3 +155,8 @@ class StringMatcher(Matcher):
             return matched
         # Fallback to exact matcher
         return self.match(request, nodes, default)
+    
+    def _persist_semantic_log(self):
+        """Write the accumulated semantic log as JSON to the log file"""
+        with open(self.semantic_log_path, 'w') as f:
+            json.dump(self.semantic_log, f, indent=2, ensure_ascii=False)
