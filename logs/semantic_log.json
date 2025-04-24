@@ -1,27 +1,7 @@
 [
   [
-    "Ich bin ein privater Kunde",
-    "private",
-    "exact(privater)"
-  ],
-  [
-    "Ich habe ein Problem mit meinem Cleanbug",
-    "cleanbug",
-    "exact(cleanbug)"
-  ],
-  [
-    "Er geht nicht an...",
-    "problem_cleanbug_1",
-    "exact(geht nicht an)"
-  ],
-  [
-    "Nein",
-    "nein",
-    "exact(nein)"
-  ],
-  [
-    "Vielleicht",
-    "feedback_ja",
-    0.0
+    "Well, hello there",
+    "n1",
+    "exact(hello)"
   ]
 ]

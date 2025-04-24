@@ -1,87 +1,12 @@
 [
   {
-    "name": "start",
+    "name": "first",
     "type": "o",
-    "content": "Hallo. Ich bin der Support-Chatbot der Bugland Ltd. Bist du ein privater oder ein business Kunde?"
+    "content": "First"
   },
   {
-    "name": "private",
-    "type": "c",
-    "content": "privat;privater;ich bin privat"
-  },
-  {
-    "name": "produkt",
+    "name": "second",
     "type": "o",
-    "content": "Worum geht es?"
-  },
-  {
-    "name": "cleanbug",
-    "type": "c",
-    "content": "cleanbug;roboter;reinigungsroboter"
-  },
-  {
-    "name": "problem",
-    "type": "o",
-    "content": "Was ist das Problem?"
-  },
-  {
-    "name": "problem_cleanbug_1",
-    "type": "c",
-    "content": "geht nicht an;startet nicht;kein strom"
-  },
-  {
-    "name": "loesung_cleanbug_1",
-    "type": "o",
-    "content": "Der Cleanbug ist möglicherweise nicht aufgeladen. Bitte stelle sicher, dass er korrekt mit dem Ladegerät verbunden ist."
-  },
-  {
-    "name": "konnte_helfen",
-    "type": "o",
-    "content": "Konnte ich dir damit weiterhelfen?"
-  },
-  {
-    "name": "nein",
-    "type": "c",
-    "content": "nein;nicht geholfen"
-  },
-  {
-    "name": "ticket_eroeffnen",
-    "type": "o",
-    "content": "Ich werde ein Ticket für dich eröffnen. Bitte nenne mir deine E-Mail-Adresse."
-  },
-  {
-    "name": "ticket_eroeffnen_email",
-    "type": "i",
-    "content": "joshua.noeldeke@me.com"
-  },
-  {
-    "name": "ticket_eroeffnen_email_gesendet",
-    "type": "o",
-    "content": "Das Ticket wurde eröffnet. Du solltest in Kürze eine E-Mail erhalten. Deine Ticket-Nummer ist: {ticket_number}. Bei Fragen melde dich an support@bugland.com"
-  },
-  {
-    "name": "feedback",
-    "type": "o",
-    "content": "Möchtest du uns Feedback zum Chat geben?"
-  },
-  {
-    "name": "feedback_ja",
-    "type": "c",
-    "content": "Ja;Feedback geben"
-  },
-  {
-    "name": "feedback_eingabe",
-    "type": "i",
-    "content": "Das hat mir eigentlich ganz gut gefallen"
-  },
-  {
-    "name": "feedback_gesendet",
-    "type": "o",
-    "content": "Danke für dein Feedback!"
-  },
-  {
-    "name": "ende",
-    "type": "o",
-    "content": "Einen schönen Tag dir noch!"
+    "content": "Second"
   }
 ]
