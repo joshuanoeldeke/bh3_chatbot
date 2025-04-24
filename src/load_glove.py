@@ -56,6 +56,8 @@ def main():
                         help='Embedding dimensions to process')
     parser.add_argument('--skip-download', action='store_true',
                         help="Skip downloading zip if present")
+    parser.add_argument('--skip-extract', action='store_true',
+                        help="Skip extracting files if present")
     parser.add_argument('--output-dir', type=pathlib.Path,
                         default=pathlib.Path(__file__).resolve().parents[1] / 'glove.6B',
                         help="Destination directory for embeddings")
@@ -73,9 +75,13 @@ def main():
     else:
         print(f"Found existing zip at {zip_path.name}, skipping download.")
 
-    # Extract selected dims
-    members = [f"glove.{args.version}.{dim}d.txt" for dim in args.dims]
-    extract_glove(zip_path, members, output_dir)
+    # Extract selected dims if necessary
+    if args.skip_extract:
+        print("Skipping extraction of GloVe files.")
+        return
+    else:
+        members = [f"glove.{args.version}.{dim}d.txt" for dim in args.dims]
+        extract_glove(zip_path, members, output_dir)
 
     # Convert to Word2Vec format
     for dim in args.dims:

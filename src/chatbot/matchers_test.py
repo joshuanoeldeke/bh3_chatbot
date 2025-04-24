@@ -33,7 +33,7 @@ def test_semantic_match_fallback_to_match():
 def test_semantic_log_records_exact_match():
     """Test that semantic_match logs exact keyword matches"""
     matcher = StringMatcher()
-    nodes = [ChatNode('n1','c','hello;hi'), ChatNode('n2','c','bye;goodbye')]
+    nodes = [ChatNode('n1', 'c', 'hello;hi'), ChatNode('n2', 'c', 'bye;goodbye')]
     # Perform an exact match
     _ = matcher.semantic_match('Well, hello there', nodes)
     assert hasattr(matcher, 'semantic_log')
