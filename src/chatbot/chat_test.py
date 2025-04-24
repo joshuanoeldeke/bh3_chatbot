@@ -36,14 +36,14 @@ def test_advance_with_regular_node(chat, mock_matcher, mock_replier):
     current_nodes = chat.current_nodes
     
     # Configure the mocks
-    mock_matcher.match.return_value = matched_node
+    mock_matcher.semantic_match.return_value = matched_node
     mock_replier.reply.return_value = next_nodes
     
     # Call the method under test
     result = chat.advance(request)
     
     # Verify the behavior using captured nodes
-    mock_matcher.match.assert_called_once_with(request, current_nodes)
+    mock_matcher.semantic_match.assert_called_once_with(request, current_nodes, default=chat.START)
     mock_replier.reply.assert_called_once_with(matched_node)
     assert result == next_nodes
     assert chat.current_nodes == next_nodes
@@ -57,7 +57,7 @@ def test_advance_with_input_node(chat, mock_matcher, mock_replier):
     next_nodes = [ChatNode("greeting", "o", "Nice to meet you, Alice!")]
     
     # Configure the mocks
-    mock_matcher.match.return_value = matched_node
+    mock_matcher.semantic_match.return_value = matched_node
     mock_replier.reply.return_value = next_nodes
     
     # Call the method under test
@@ -75,7 +75,7 @@ def test_conversation_flow(chat, mock_matcher, mock_replier):
     first_matched = ChatNode("greeting", "o", "Hi there!")
     first_response = [ChatNode("question", "o", "How are you?")]
     
-    mock_matcher.match.return_value = first_matched
+    mock_matcher.semantic_match.return_value = first_matched
     mock_replier.reply.return_value = first_response
     
     result1 = chat.advance(first_request)
@@ -87,7 +87,7 @@ def test_conversation_flow(chat, mock_matcher, mock_replier):
     second_matched = ChatNode("feeling", "i", "")
     second_response = [ChatNode("farewell", "o", "Glad to hear that!")]
     
-    mock_matcher.match.return_value = second_matched
+    mock_matcher.semantic_match.return_value = second_matched
     mock_replier.reply.return_value = second_response
     
     result2 = chat.advance(second_request)
