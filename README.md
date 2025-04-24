@@ -36,16 +36,16 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 - pip (installed with Python)
 - System dependencies:
   - macOS:
-    - Homebrew (https://brew.sh/)
+    - [Homebrew](https://brew.sh/)
     - pkg-config and OpenBLAS: `brew install pkg-config openblas`
     - Graphviz: `brew install graphviz`
   - Linux (Debian/Ubuntu):
     - pkg-config, OpenBLAS, Graphviz, and build tools: `sudo apt-get update && sudo apt-get install -y pkg-config libopenblas-dev graphviz build-essential`
   - Windows:
     - Graphviz: Download & install from https://graphviz.org/download/ and add to your PATH
-    - Microsoft Visual C++ Build Tools: Install from https://aka.ms/vs/17/release/vc_redist.x64 (required for native Python extensions)
+    - Microsoft Visual C++ Build Tools: Install the "Desktop development with C++" workload from within [Visual Studio](https://visualstudio.microsoft.com/de/downloads/?q=build+tools) (required for native Python extensions)
 - GloVe embeddings:
-  - Download from https://nlp.stanford.edu/projects/glove/
+  - Download from [here](https://nlp.stanford.edu/projects/glove/)
   - Place the extracted files in the `glove.6B/` directory in the project root
 
 ## Installation
