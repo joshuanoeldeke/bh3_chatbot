@@ -29,14 +29,14 @@ INSERT INTO chat_nodes (name, content, type) VALUES
 
     -- Auswahl Kunde
     ('private', 'privat;privater;ich bin privat', 'c'),
-    ('business', 'business;firma;gewerbe', 'c'),
+    ('business', 'business;firma;gewerbe;geschäft;geschäftskunde', 'c'),
 
     -- Produktabfrage
     ('produkt', 'Worum geht es?', 'o'),
 
     -- Produktauswahl
     ('frage', 'frage;allgemein;allgemeine', 'c'),
-    ('cleanbug', 'cleanbug;roboter;reinigungsroboter', 'c'),
+    ('cleanbug', 'cleanbug;reinigungsroboter', 'c'),
     ('windowfly', 'windowfly;fensterroboter', 'c'),
     ('gardenbeetle', 'gardenbeetle;gartenroboter;unkraut', 'c'),
     ('sonstiges_produkt', 'sonstiges;anderes', 'c'),
