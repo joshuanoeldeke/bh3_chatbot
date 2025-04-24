@@ -33,6 +33,19 @@ class StringMatcher(Matcher):
     """
     Simply finds the first choice explicitly mentioned in a request
     """
+    def __init__(self):
+        self.semantic_log = []
+        log_dir = os.environ.get('LOG_DIR', 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+        self.semantic_log_path = os.environ.get('SEMANTIC_LOG_PATH', os.path.join(log_dir, 'semantic_log.json'))
+        # Optionally clear the log file at init (not strictly necessary for in-memory log)
+        try:
+            with open(self.semantic_log_path, 'w') as f:
+                json.dump([], f, indent=2)
+        except Exception as e:
+            import warnings
+            warnings.warn(f"Could not clear semantic log file: {e}")
+
     def match(self, request: str, nodes: list[ChatNode], default: str = "") -> ChatNode:
         request = request.lower()
         for node in nodes:
@@ -49,22 +62,6 @@ class StringMatcher(Matcher):
         """
         Semantic matching using soft cosine similarity with gensim.
         """
-        # Initialize semantic log
-        if not hasattr(self, 'semantic_log'):
-            self.semantic_log = []
-            # prepare log directory and semantic log file path
-            log_dir = os.environ.get('LOG_DIR', 'logs')
-            os.makedirs(log_dir, exist_ok=True)
-            self.semantic_log_path = os.environ.get('SEMANTIC_LOG_PATH', os.path.join(log_dir, 'semantic_log.json'))
-            # clear existing semantic log
-            try:
-                with open(self.semantic_log_path, 'w') as f:
-                    json.dump([], f, indent=2)
-            except Exception as e:
-                # Log file write errors but do not affect in-memory log
-                import warnings
-                warnings.warn(f"Could not clear semantic log file: {e}")
-
         # Fallback if no model available or no nodes
         if _MODEL is None or not nodes:
             return self.match(request, nodes, default)
@@ -81,8 +78,6 @@ class StringMatcher(Matcher):
             # select node with longest keyword match
             matched_node, matched_kw = max(exact_matches, key=lambda x: len(x[1]))
             # log exact match usage
-            if not hasattr(self, 'semantic_log'):
-                self.semantic_log = []
             self.semantic_log.append((request, matched_node.name, f"exact({matched_kw})"))
             # persist semantic log
             try:
@@ -168,5 +163,9 @@ class StringMatcher(Matcher):
     
     def _persist_semantic_log(self):
         """Write the accumulated semantic log as JSON to the log file"""
-        with open(self.semantic_log_path, 'w') as f:
-            json.dump(self.semantic_log, f, indent=2, ensure_ascii=False)
+        try:
+            with open(self.semantic_log_path, 'w') as f:
+                json.dump(self.semantic_log, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            import warnings
+            warnings.warn(f"Could not persist semantic log: {e}")
