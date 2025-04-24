@@ -57,8 +57,13 @@ class StringMatcher(Matcher):
             os.makedirs(log_dir, exist_ok=True)
             self.semantic_log_path = os.environ.get('SEMANTIC_LOG_PATH', os.path.join(log_dir, 'semantic_log.json'))
             # clear existing semantic log
-            with open(self.semantic_log_path, 'w') as f:
-                json.dump([], f, indent=2)
+            try:
+                with open(self.semantic_log_path, 'w') as f:
+                    json.dump([], f, indent=2)
+            except Exception as e:
+                # Log file write errors but do not affect in-memory log
+                import warnings
+                warnings.warn(f"Could not clear semantic log file: {e}")
 
         # Fallback if no model available or no nodes
         if _MODEL is None or not nodes:
@@ -76,10 +81,15 @@ class StringMatcher(Matcher):
             # select node with longest keyword match
             matched_node, matched_kw = max(exact_matches, key=lambda x: len(x[1]))
             # log exact match usage
-            self.semantic_log = getattr(self, 'semantic_log', [])
+            if not hasattr(self, 'semantic_log'):
+                self.semantic_log = []
             self.semantic_log.append((request, matched_node.name, f"exact({matched_kw})"))
             # persist semantic log
-            self._persist_semantic_log()
+            try:
+                self._persist_semantic_log()
+            except Exception as e:
+                import warnings
+                warnings.warn(f"Could not persist semantic log: {e}")
             # debug print
             import builtins
             if getattr(builtins, '_CHAT_DEBUG', False):
