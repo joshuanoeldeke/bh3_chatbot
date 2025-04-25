@@ -19,7 +19,11 @@ usecase "Chatbot-Graph aktualisieren" as cga
 usecase "Chat-Feedback geben" as cfg
 
 ' Use Case Erweiterungen
-ticket ..> pm : <<extend>>\n(nicht gelöst)
+ticket ..> pm : <<extend>>
+note on link
+  <<Vorbedingung>>
+  Problem nicht gelöst
+end note
 
 ' Notizen
 note right of logs
@@ -33,6 +37,7 @@ endnote
 ' Verbindungen: Kunde
 c --> pb
 c --> pm
+c --> ticket
 c --> cfg
 c --> info
 
