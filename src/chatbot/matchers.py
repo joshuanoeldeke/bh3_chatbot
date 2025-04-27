@@ -1,171 +1,135 @@
-from abc import abstractmethod
-
-from .types import *
-
 import os
 import pathlib
-from gensim.models import KeyedVectors
-import json
+import re
+import warnings
+from abc import ABC, abstractmethod
+from typing import List, Optional
 
-# Disable tqdm progress bars used internally by gensim or other libraries
-try:
-    import tqdm
-    # Override tqdm.tqdm and trange to be no-ops
-    tqdm.tqdm = lambda iterable=None, **kwargs: iterable if iterable is not None else []
-    tqdm.trange = lambda *args, **kwargs: range(*args)
-except ImportError:
-    pass
+import numpy as np
+from gensim.models import KeyedVectors, TfidfModel
+from gensim.utils import simple_preprocess
+from gensim.corpora import Dictionary
+from gensim.similarities import SparseTermSimilarityMatrix, WordEmbeddingSimilarityIndex, SoftCosineSimilarity
 
-_MODEL = None
-model_path = os.environ.get(
-    "GLOVE_MODEL_PATH",
-    str(pathlib.Path(__file__).resolve().parents[2] / "glove.6B" / "glove.6B.50d.w2v.txt")
+from .types import ChatNode
+from .debug_mode import init_semantic_log, log_semantic
+
+_MODEL: Optional[KeyedVectors] = None
+_MODEL_PATH: Optional[str] = None
+MODEL_PATH_ENV = "GLOVE_MODEL_PATH"
+
+# suppress divide-by-zero warnings from gensim term similarity
+warnings.filterwarnings(
+    'ignore',
+    category=RuntimeWarning,
+    module='gensim.similarities.termsim'
 )
-if os.path.isfile(model_path):
-    _MODEL = KeyedVectors.load_word2vec_format(model_path, binary=False)
 
-class Matcher:
+def _get_model() -> Optional[KeyedVectors]:
+    """Lazily load or reload the GloVe model from env if changed."""
+    global _MODEL, _MODEL_PATH
+    path = os.environ.get(MODEL_PATH_ENV)
+    if not path:
+        return None
+    if path != _MODEL_PATH:
+        if os.path.isfile(path):
+            _MODEL = KeyedVectors.load_word2vec_format(path, binary=False)
+            _MODEL_PATH = path
+        else:
+            _MODEL = None
+            _MODEL_PATH = None
+    return _MODEL
+
+
+def _preprocess(text: str) -> List[str]:
+    """Tokenize and clean text."""
+    text = re.sub(r'<[^<>]+>', ' ', text)
+    text = re.sub(r'http[s]?://\S+', ' url ', text)
+    return [t for t in simple_preprocess(text) if t]
+
+
+class Matcher(ABC):
     @abstractmethod
-    def match(self, request: str, nodes: list[ChatNode], default: str = "") -> ChatNode:
+    def match(self, request: str, nodes: List[ChatNode], default: str = "") -> ChatNode:
         pass
 
+
 class StringMatcher(Matcher):
-    """
-    Simply finds the first choice explicitly mentioned in a request
-    """
+    """Literal and semantic matcher for ChatNodes."""
     def __init__(self):
-        self.semantic_log = []
-        log_dir = os.environ.get('LOG_DIR', 'logs')
-        os.makedirs(log_dir, exist_ok=True)
-        self.semantic_log_path = os.environ.get('SEMANTIC_LOG_PATH', os.path.join(log_dir, 'semantic_log.json'))
-        # Optionally clear the log file at init (not strictly necessary for in-memory log)
-        try:
-            with open(self.semantic_log_path, 'w') as f:
-                json.dump([], f, indent=2)
-        except Exception as e:
-            import warnings
-            warnings.warn(f"Could not clear semantic log file: {e}")
+        # clear semantic log storage
+        init_semantic_log()
 
-    def match(self, request: str, nodes: list[ChatNode], default: str = "") -> ChatNode:
-        request = request.lower()
-        for node in nodes:
-            if node.type == "o":
-                return node
+    def match(self, request: str, nodes: List[ChatNode], default: str = "") -> ChatNode:
+        req = request.lower()
+        # type 'o' always wins
+        for n in nodes:
+            if n.type == 'o':
+                return n
+        # keyword match
+        for n in nodes:
+            if any(kw and kw.lower() in req for kw in n.content.split(';')):
+                return n
+        return next((n for n in nodes if n.name == default), nodes[0])
 
-            keywords = node.content.split(";")
-            for word in keywords:
-                if word.lower() in request:
-                    return node
-        return next((node for node in nodes if node.name == default), nodes[0])
-
-    def semantic_match(self, request: str, nodes: list[ChatNode], default: str = "") -> ChatNode:
-        """
-        Semantic matching using soft cosine similarity with gensim.
-        """
-        # Fallback if no model available or no nodes
-        if _MODEL is None or not nodes:
+    def semantic_match(self, request: str, nodes: List[ChatNode], default: str = "") -> ChatNode:
+        # 1) Exact keyword matching: pick the node with the longest matching keyword
+        req = request.lower()
+        exact = [ (n, kw)
+                  for n in nodes if n.type != 'o'
+                  for kw in n.content.split(';')
+                  if kw and kw.lower() in req ]
+        if exact:
+            # choose the most specific keyword and log it
+            n, kw = max(exact, key=lambda x: len(x[1]))
+            self._log(request, n.name, f"exact({kw})")
+            return n
+        # 2) Load or reload the GloVe embedding model if needed
+        model = _get_model()
+        # fallback to simple match if model missing or no candidates
+        if not model or not nodes:
             return self.match(request, nodes, default)
-
-        # Exact keyword check: collect all candidates and pick the longest matching keyword
-        exact_matches = []
-        for node in nodes:
-            if node.type == 'o':
-                continue
-            for kw in node.content.split(';'):
-                if kw and kw.lower() in request.lower():
-                    exact_matches.append((node, kw))
-        if exact_matches:
-            # select node with longest keyword match
-            matched_node, matched_kw = max(exact_matches, key=lambda x: len(x[1]))
-            # log exact match usage
-            self.semantic_log.append((request, matched_node.name, f"exact({matched_kw})"))
-            # persist semantic log
-            try:
-                self._persist_semantic_log()
-            except Exception as e:
-                import warnings
-                warnings.warn(f"Could not persist semantic log: {e}")
-            # debug print
-            import builtins
-            if getattr(builtins, '_CHAT_DEBUG', False):
-                print(f"[EXACT] query={request!r} -> {matched_node.name} using keyword {matched_kw!r}")
-            return matched_node
-
-        # Prepare and tokenize documents: filter out empty docs
-        from re import sub
-        def preprocess(doc):
-            doc = sub(r'<[^<>]+(>|$)', ' ', doc)
-            doc = sub(r'http[s]?://\S+', ' url_token ', doc)
-            from gensim.utils import simple_preprocess
-            return [token for token in simple_preprocess(doc) if token]
-        corpus_docs = []
-        candidates = []
-        for node in nodes:
-            if node.type == 'o':
-                continue
-            tokens = preprocess(node.content.replace(';', ' '))
-            if tokens:
-                corpus_docs.append(tokens)
-                candidates.append(node)
-        if not corpus_docs:
+        # 3) Prepare tokenized documents for Soft Cosine
+        corpus = [_preprocess(n.content.replace(';', ' ')) for n in nodes if n.type != 'o']
+        tokens = _preprocess(request)
+        # if preprocessing yields no tokens, fallback
+        if not corpus or not tokens:
             return self.match(request, nodes, default)
-
-        # Preprocess query
-        query = preprocess(request)
-        if not query:
+        # 4) Build dictionary and TF-IDF representation
+        dict_ = Dictionary(corpus + [tokens])
+        tfidf = TfidfModel(dictionary=dict_)
+        tfidf_corpus = [tfidf[dict_.doc2bow(c)] for c in corpus]
+        # remove docs that produce empty TF-IDF (zero vectors)
+        cand_nodes = [n for n in nodes if n.type != 'o']
+        valid_idxs = [i for i, doc in enumerate(tfidf_corpus) if doc]
+        if not valid_idxs:
             return self.match(request, nodes, default)
-
-        # Build dictionary and TF-IDF
-        from gensim.corpora import Dictionary
-        from gensim.models import TfidfModel
-        dictionary = Dictionary(corpus_docs + [query])
-        tfidf = TfidfModel(dictionary=dictionary)
-        tfidf_corpus = [tfidf[dictionary.doc2bow(doc)] for doc in corpus_docs]
-
-        # Build similarity matrix, suppress warnings during creation
-        from gensim.similarities import SparseTermSimilarityMatrix, WordEmbeddingSimilarityIndex
-        import warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            similarity_index = WordEmbeddingSimilarityIndex(_MODEL)
-            similarity_matrix = SparseTermSimilarityMatrix(similarity_index, dictionary, tfidf)
-
-        from gensim.similarities import SoftCosineSimilarity
-        import warnings
-        # Compute soft cosine similarities, suppressing runtime and fortran divide-by-zero warnings
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            index = SoftCosineSimilarity(tfidf_corpus, similarity_matrix)
-            query_tf = tfidf[dictionary.doc2bow(query)]
-            sims = index[query_tf]
-
-        # Find best matching candidate
-        import numpy as np
-        try:
-            best_idx = int(np.nanargmax(sims))
-            best_score = float(sims[best_idx])
-        except Exception:
+        filtered_corpus = [tfidf_corpus[i] for i in valid_idxs]
+        # 5) Create a SoftCosineSimilarity index using word embeddings, suppress NumPy runtime warnings
+        with np.errstate(divide='ignore', invalid='ignore'):
+            sim_index = WordEmbeddingSimilarityIndex(model)
+            matrix = SparseTermSimilarityMatrix(sim_index, dict_, tfidf)
+            softcos = SoftCosineSimilarity(filtered_corpus, matrix)
+        # 6) Transform query and compute similarity scores
+        vec = tfidf[dict_.doc2bow(tokens)]
+        # compute similarity scores, suppress divide-by-zero/runtime warnings
+        with np.errstate(divide='ignore', invalid='ignore'):
+            scores_raw = softcos[vec]
+        # map back to original candidates, zero for removed docs
+        scores = np.zeros(len(cand_nodes))
+        for idx_filt, orig_i in enumerate(valid_idxs):
+            scores[orig_i] = float(scores_raw[idx_filt])
+        # 7) Pick the highest-scoring candidate (or fallback)
+        idx = int(np.nanargmax(scores)) if scores.size else -1
+        if idx < 0:
             return self.match(request, nodes, default)
-        matched = candidates[best_idx]
-        # Log semantic match usage
-        self.semantic_log.append((request, matched.name, best_score))
-        # persist semantic log
-        self._persist_semantic_log()
-        # Debug print
-        import builtins
-        if getattr(builtins, '_CHAT_DEBUG', False):
-            print(f"[SEMANTIC] query={request!r} -> {matched.name} (score={best_score:.3f})")
-        # Threshold for semantic match
-        if best_score >= 0.1:
-            return matched
-        # Fallback to exact matcher
-        return self.match(request, nodes, default)
-    
-    def _persist_semantic_log(self):
-        """Write the accumulated semantic log as JSON to the log file"""
-        try:
-            with open(self.semantic_log_path, 'w') as f:
-                json.dump(self.semantic_log, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            import warnings
-            warnings.warn(f"Could not persist semantic log: {e}")
+        # 8) Log the best semantic match and threshold by score
+        best = [n for n in nodes if n.type != 'o'][idx]
+        score = float(scores[idx])
+        self._log(request, best.name, score)
+        # require a minimum similarity (0.1) or fallback to keyword logic
+        return best if score >= 0.1 else self.match(request, nodes, default)
+
+    def _log(self, req: str, name: str, info):
+        # delegate to debug_mode
+        log_semantic(req, name, info)

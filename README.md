@@ -5,6 +5,7 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 ## Table of Contents
 
 - [Features](#features)
+- [Detailed Functionality](#detailed-functionality)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Gensim and GloVe Embeddings](#gensim-and-glove-embeddings)
@@ -28,6 +29,46 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 - Automatic ticket creation path with email capture.
 - Feedback collection at the end of the conversation.
 - Standalone visualization of the chat graph using Graphviz.
+
+## Detailed Functionality
+
+Below is a concise, step-by-step overview of the chatbot’s main components and how they work:
+
+1. Conversation Graph
+   - Stored in SQLite tables `chat_nodes` (node definitions) and `chat_edges` (directed links).
+   - Each node has a `type`:
+     - `o` = bot output (prompts or messages)
+     - `c` = choice options (user picks one)
+     - `i` = input fields (free-text entry)
+
+2. Chat Engine (`chat.py`)
+   - Manages the current set of available nodes and conversation history.
+   - `advance(request)`:
+     1. Calls the matcher to select the best next node for the user’s request.
+     2. Appends the chosen node to an in-memory log and persists it to `logs/chat_log.json`.
+     3. If it’s an input node (`i`), captures the user’s text in `node.content`.
+     4. Asks the replier for the next child nodes and returns them.
+
+3. Matching Logic (`matchers.py`)
+   - `StringMatcher.match()`:
+     • Simple literal or keyword matching against node contents.
+   - `StringMatcher.semantic_match()` (8 steps):
+     1. Exact keyword scan: longest keyword wins (fast fallback).
+     2. Lazy-load GloVe embeddings from `GLOVE_MODEL_PATH` when first used.
+     3. Preprocess both node content and user request (tokenize, lowercase, strip tags/URLs).
+     4. Build a combined dictionary and TF–IDF corpus.
+     5. Create a SoftCosine index using word embeddings for semantic similarity.
+     6. Transform the user’s query into the TF–IDF vector space.
+     7. Score against each node’s TF–IDF vector and pick the highest.
+     8. Log the match and require a minimum score (0.1) or fallback.
+
+4. Debug & Logging (`debug_mode.py`)
+   - Central in-memory stores for both chat and semantic logs.
+   - Clears logs on startup and writes JSON to `logs/chat_log.json` and `logs/semantic_log.json`.
+   - Provides `set_debug()`, `is_debug()`, and `debug_print()` to control debug verbosity.
+   - Exposes `get_chat_log()` and `get_semantic_log()` for post-mortem inspection.
+
+All core functions are covered by unit tests (`pytest`) in `src/chatbot/*_test.py`.
 
 ## Prerequisites
 
@@ -87,6 +128,12 @@ Gensim requires converting GloVe text files to Word2Vec format before loading th
        "glove.6B/glove.6B.100d.w2v.txt", binary=False
    )
    ```
+
+## Problems with NLP Matching
+- Since we are using a pre-trained GloVe model, the embeddings may not match the specific vocabulary of the chatbot.
+- A work-around is to add specific keywords to the graph nodes to ensure they are matched correctly.
+- The matcher will first check for exact matches before falling back to semantic matching.
+- The matcher will also check for the longest keyword match first, so if you have a specific keyword that is longer than others, it will be matched first.
 
 ## Database Initialization
 

@@ -36,5 +36,5 @@ class GraphReplier(Replier):
         return request.children
 
     def get_start(self) -> list[ChatNode]:
-        # Return the start node directly, no artificial root
+        # Return the defined 'start' node directly; no artificial wrapper needed since graph includes its own root
         return [self.graph]

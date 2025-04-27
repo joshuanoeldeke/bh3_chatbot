@@ -1,12 +1,44 @@
 [
   {
-    "name": "first",
+    "kind": "chat",
+    "name": "start",
     "type": "o",
-    "content": "First"
+    "content": "Hallo. Ich bin der Support-Chatbot der Bugland Ltd. Bist du ein privater oder ein business Kunde?"
   },
   {
-    "name": "second",
+    "kind": "semantic",
+    "req": "Ich bin ein privater Kunde",
+    "name": "private",
+    "info": "exact(privater)"
+  },
+  {
+    "kind": "chat",
+    "name": "private",
+    "type": "c",
+    "content": "privat;privater;ich bin privat"
+  },
+  {
+    "kind": "chat",
+    "name": "produkt",
     "type": "o",
-    "content": "Second"
+    "content": "Worum geht es?"
+  },
+  {
+    "kind": "semantic",
+    "req": "Iiic habe eube wuestion",
+    "name": "frage",
+    "info": 0.0
+  },
+  {
+    "kind": "chat",
+    "name": "frage",
+    "type": "c",
+    "content": "frage;allgemein;allgemeine"
+  },
+  {
+    "kind": "chat",
+    "name": "informationen",
+    "type": "o",
+    "content": "Möchtest du mehr über Vertragszeiten oder die Anmeldung als Business-Kunde erfahren?"
   }
 ]
