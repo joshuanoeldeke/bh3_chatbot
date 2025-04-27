@@ -17,9 +17,9 @@ class Chat:
 
     def advance(self, request: str) -> list[ChatNode]:
         # Use semantic matching if available, otherwise fallback to exact match
-        try:
+        if hasattr(self.matcher, 'semantic_match'):
             node = self.matcher.semantic_match(request, self.current_nodes, default=self.START)
-        except AttributeError:
+        else:
             node = self.matcher.match(request, self.current_nodes, default=self.START)
         # record in both local and debug_mode store
         self.log.append(node)
