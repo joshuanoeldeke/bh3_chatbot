@@ -1,0 +1,46 @@
+@startuml
+
+' flowchart TD
+'     A[Anfrageeinreichung durch Kunde] --> B[Erfassung & Kategorisierung]
+'     B --> C{Genehmigung erforderlich?}
+'     C -- Ja --> D[Genehmigung einholen]
+'     C -- Nein --> E[Bearbeitung durch Support]
+'     D --> E
+'     E --> F{Lösung gefunden?}
+'     F -- Ja --> G[Abschluss & Feedback einholen]
+'     F -- Nein --> H[Eskalation]
+'     H --> E
+'     G --> I[Dokumentation & Prozessoptimierung]
+
+|Kunde|
+start
+:Anfrageeinreichung durch Kunde;
+
+|Support-Team|
+:Erfassung & Kategorisierung;
+if (Genehmigung erforderlich?) then (Ja)
+  :Genehmigung einholen;
+
+    |Genehmiger|
+    :Genehmigung geben;
+else (Nein)
+endif
+
+|Support-Team|
+:Bearbeitung durch Support;
+repeat
+  if (Lösung gefunden?) then (Ja)
+    :Feedback einholen;
+
+|Kunde|
+:Kunde gibt Rückmeldung;
+
+|Support-Team|
+  else (Nein)
+  endif
+repeat while (Problem gelöst oder Rückmeldungsfrist verstrichen?) is (Nein) not (Ja)
+
+:Dokumentation & Prozessoptimierung;
+stop
+
+@enduml

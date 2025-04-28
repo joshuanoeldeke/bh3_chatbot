@@ -1,18 +1,29 @@
+import os
+import json
 from .repliers import *
 from .matchers import *
+from .debug_mode import init_chat_log, log_chat
 
 class Chat:
     def __init__(self, replier: Replier, matcher: Matcher):
         self.replier = replier
         self.matcher = matcher
         self.current_nodes = replier.get_start()
-        self.log = []
-        
+        self.log: list[ChatNode] = []
+        # clear existing chat log storage
+        init_chat_log()
+
         self.START = ""
 
     def advance(self, request: str) -> list[ChatNode]:
-        node = self.matcher.match(request, self.current_nodes)
+        # Use semantic matching if available, otherwise fallback to exact match
+        if hasattr(self.matcher, 'semantic_match'):
+            node = self.matcher.semantic_match(request, self.current_nodes, default=self.START)
+        else:
+            node = self.matcher.match(request, self.current_nodes, default=self.START)
+        # record in both local and debug_mode store
         self.log.append(node)
+        log_chat(node)
 
         # Insert request string to node if input
         if node.type == 'i': node.content = request

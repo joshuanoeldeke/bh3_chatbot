@@ -5,8 +5,10 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 ## Table of Contents
 
 - [Features](#features)
+- [Detailed Functionality](#detailed-functionality)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Gensim and GloVe Embeddings](#gensim-and-glove-embeddings)
 - [Database Initialization](#database-initialization)
 - [Project Structure](#project-structure)
 - [Usage](#usage)
@@ -28,11 +30,64 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 - Feedback collection at the end of the conversation.
 - Standalone visualization of the chat graph using Graphviz.
 
+## Detailed Functionality
+
+Below is a concise, step-by-step overview of the chatbot’s main components and how they work:
+
+1. Conversation Graph
+   - Stored in SQLite tables `chat_nodes` (node definitions) and `chat_edges` (directed links).
+   - Each node has a `type`:
+     - `o` = bot output (prompts or messages)
+     - `c` = choice options (user picks one)
+     - `i` = input fields (free-text entry)
+
+2. Chat Engine (`chat.py`)
+   - Manages the current set of available nodes and conversation history.
+   - `advance(request)`:
+     1. Calls the matcher to select the best next node for the user’s request.
+     2. Appends the chosen node to an in-memory log and persists it to `logs/chat_log.json`.
+     3. If it’s an input node (`i`), captures the user’s text in `node.content`.
+     4. Asks the replier for the next child nodes and returns them.
+
+3. Matching Logic (`matchers.py`)
+   - `StringMatcher.match()`:
+     • Simple literal or keyword matching against node contents.
+   - `StringMatcher.semantic_match()` (8 steps):
+     1. Exact keyword scan: longest keyword wins (fast fallback).
+     2. Lazy-load GloVe embeddings from `GLOVE_MODEL_PATH` when first used.
+     3. Preprocess both node content and user request (tokenize, lowercase, strip tags/URLs).
+     4. Build a combined dictionary and TF–IDF corpus.
+     5. Create a SoftCosine index using word embeddings for semantic similarity.
+     6. Transform the user’s query into the TF–IDF vector space.
+     7. Score against each node’s TF–IDF vector and pick the highest.
+     8. Log the match and require a minimum score (0.1) or fallback.
+
+4. Debug & Logging (`debug_mode.py`)
+   - Central in-memory stores for both chat and semantic logs.
+   - Clears logs on startup and writes JSON to `logs/chat_log.json` and `logs/semantic_log.json`.
+   - Provides `set_debug()`, `is_debug()`, and `debug_print()` to control debug verbosity.
+   - Exposes `get_chat_log()` and `get_semantic_log()` for post-mortem inspection.
+
+All core functions are covered by unit tests (`pytest`) in `src/chatbot/*_test.py`.
+
 ## Prerequisites
 
-- Python 3.8 or newer
+- Python 3.11.8 (minimum)
+- Recommended: Install and use pyenv to manage and pin Python versions. A `.python-version` file in the project root can specify `3.11.8` automatically for collaborators.
 - pip (installed with Python)
-- [Graphviz system package](https://graphviz.org/download/) (required by the Python `graphviz` module)
+- System dependencies:
+  - macOS:
+    - [Homebrew](https://brew.sh/)
+    - pkg-config and OpenBLAS: `brew install pkg-config openblas`
+    - Graphviz: `brew install graphviz`
+  - Linux (Debian/Ubuntu):
+    - pkg-config, OpenBLAS, Graphviz, and build tools: `sudo apt-get update && sudo apt-get install -y pkg-config libopenblas-dev graphviz build-essential`
+  - Windows:
+    - Graphviz: Download & install from https://graphviz.org/download/ and add to your PATH
+    - Microsoft Visual C++ Build Tools: Install the "Desktop development with C++" workload from within [Visual Studio](https://visualstudio.microsoft.com/de/downloads/?q=build+tools) (required for native Python extensions)
+- GloVe embeddings:
+  - Download from [here](https://nlp.stanford.edu/projects/glove/)
+  - Place the extracted files in the `glove.6B/` directory in the project root
 
 ## Installation
 
@@ -53,6 +108,32 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
    ```bash
    pip install -r requirements.txt
    ```
+
+## Gensim and GloVe Embeddings
+
+Gensim requires converting GloVe text files to Word2Vec format before loading them:
+
+1. Ensure you have the GloVe files in `glove.6B/`.
+2. Install gensim if not included: `pip install gensim`
+3. Convert the embeddings using the built-in script:
+   ```bash
+   python -m gensim.scripts.glove2word2vec \
+       -i glove.6B/glove.6B.100d.txt \
+       -o glove.6B/glove.6B.100d.w2v.txt
+   ```
+4. Load the embeddings in your code:
+   ```python
+   from gensim.models import KeyedVectors
+   model = KeyedVectors.load_word2vec_format(
+       "glove.6B/glove.6B.100d.w2v.txt", binary=False
+   )
+   ```
+
+## Problems with NLP Matching
+- Since we are using a pre-trained GloVe model, the embeddings may not match the specific vocabulary of the chatbot.
+- A work-around is to add specific keywords to the graph nodes to ensure they are matched correctly.
+- The matcher will first check for exact matches before falling back to semantic matching.
+- The matcher will also check for the longest keyword match first, so if you have a specific keyword that is longer than others, it will be matched first.
 
 ## Database Initialization
 
