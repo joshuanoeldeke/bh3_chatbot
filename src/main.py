@@ -4,7 +4,7 @@ import pathlib
 import sqlite3
 
 from chatbot import ChatNode
-from chatbot.debug_mode import set_debug
+from chatbot.debug_mode import *
 from chatbot.repliers import GraphReplier
 from chatbot.matchers import StringMatcher
 from chatbot.chat import Chat
@@ -105,12 +105,12 @@ def main():
             print(entry)
 
     # Print semantic match usage log (debug only)
-    if args.debug:
-        sem = get_semantic_log()
-        if sem:
-            print("\n=== Match Usage Log ===")
-            for req, name, score in sem:
-                print(f"{req!r} -> {name} ({score})")
+    # if args.debug:
+    #     sem = get_semantic_log()
+    #     if sem:
+    #         print("\n=== Match Usage Log ===")
+    #         for req, name, score in sem:
+    #             print(f"{req!r} -> {name} ({score})")
 
 
 if __name__ == "__main__":

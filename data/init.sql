@@ -1,3 +1,22 @@
+-- Add session and unified_log tables
+CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    started_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS unified_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    name TEXT,
+    type TEXT,
+    content TEXT,
+    req TEXT,
+    info TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES sessions(id)
+);
+
 -- Create tables that represent the chat conversion graph
 CREATE TABLE IF NOT EXISTS chat_nodes (
     name VARCHAR(255) PRIMARY KEY NOT NULL,
