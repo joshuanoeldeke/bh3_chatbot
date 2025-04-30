@@ -123,12 +123,16 @@ class StringMatcher(Matcher):
         idx = int(np.nanargmax(scores)) if scores.size else -1
         if idx < 0:
             return self.match(request, nodes, default)
-        # 8) Log the best semantic match and threshold by score
+        # 8) Determine best candidate and enforce minimum similarity threshold
         best = [n for n in nodes if n.type != 'o'][idx]
         score = float(scores[idx])
+        # low confidence: log and signal reprompt
+        if score < 0.1:
+            self._log(request, best.name, f"low_confidence({score})")
+            return None
+        # high confidence: log and return choice
         self._log(request, best.name, score)
-        # require a minimum similarity (0.1) or fallback to keyword logic
-        return best if score >= 0.1 else self.match(request, nodes, default)
+        return best
 
     def _log(self, req: str, name: str, info):
         # delegate to debug_mode

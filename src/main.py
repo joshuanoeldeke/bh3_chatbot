@@ -83,10 +83,10 @@ def main():
         if args.debug:
             path = " -> ".join(n.name for n in chat.log)
             print(f"Path taken: {path}")
+        # Always print bot messages and then prompt user
         if nodes[0].type == "o":
             print(f"Chatbot: {nodes[0].content}")
-        else:
-            request = cli.input("You: ")
+        request = cli.input("You: ")
 
     # Handle ticket creation
     for n in chat.log:
