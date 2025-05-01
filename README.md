@@ -154,26 +154,46 @@ Ensure the file `data/bugland.db` exists before running the chatbot or visualiza
 ## Project Structure
 
 ```
-├── README.md              # This file
-├── requirements.txt       # Python dependencies
 ├── data/
 │   ├── init.sql           # SQL schema and seed data
 │   ├── init_sqlite.py     # Helper to build the DB
 │   └── bugland.db         # Generated SQLite database
 ├── docs/
+│   ├── activity.puml  # PUML for activity diagram
+│   ├── activity.svg   # Example activity diagram
 │   ├── chat_flowchart.png # Example chat flow visualization
-│   └── use_case.*         # Use-case diagrams
+│   ├── Chatbot-Konkurrenz_Alternativen.pdf # Chatbot alternatives
+│   └── use_case.puml # PUML for use case diagram
+│   └── use_case.SVG # example use case diagram
+├── glove.6B/
+│   ├── glove.6B.50d.txt   # GloVe embeddings (50d)
+│   ├── glove.6B.50d.w2v.txt # GloVe embeddings (50d) in Word2Vec format
+│   ├── glove.6B.100d.txt  # GloVe embeddings (100d)
+│   ├── glove.6B.100d.w2v.txt # GloVe embeddings (100d) in Word2Vec format
+│   ├── glove.6B.200d.txt  # GloVe embeddings (200d)
+│   ├── glove.6B.200d.w2v.txt # GloVe embeddings (200d) in Word2Vec format
+│   ├── glove.6B.300d.txt  # GloVe embeddings (300d)
+│   ├── glove.6B.300d.w2v.txt # GloVe embeddings (300d) in Word2Vec format
+├── logs/
+│   ├── chat_log.json      # Chat history
 ├── src/
+│   ├── load_glove.py      # GloVe embeddings loader
 │   ├── main.py            # Entry point for CLI chatbot
 │   ├── visualize.py       # Standalone chat flow visualizer
 │   └── chatbot/           # Core chatbot package
-│       ├── types.py       # ChatNode model
+│       ├── chat_test.py       # Pytest for chat engine
 │       ├── chat.py        # Conversation engine
-│       ├── matchers.py    # User input matching logic
-│       ├── repliers.py    # Bot response resolver
-│       ├── cli.py         # Console interface helpers
-│       └── visualizer.py  # (Optional) separate visualizer module
-└── tests/                 # Unit tests (pytest)
+│       ├── cli_test.py     # Pytest for CLI
+│       ├── cli.py         # CLI class
+│       ├── debug_mode.py  # Debugging and logging
+│       ├── matchers_test.py     # Pytest for matchers
+│       ├── matchers.py     # Matcher classes
+│       ├── repliers_test.py     # Pytest for repliers
+│       ├── repliers.py     # Replier classes
+│       ├── types_test.py  # Pytest for types
+│       ├── types.py       # Node types
+├── README.md              # This file
+├── requirements.txt       # Python dependencies
 ```
 
 ## Usage
@@ -181,15 +201,21 @@ Ensure the file `data/bugland.db` exists before running the chatbot or visualiza
 ### Running the Chatbot
 
 ```bash
-cd src
-python main.py
+python src/main.py
 ```
 
-- **Optional visualization before starting**:
-  ```bash
-  python main.py --visualize
-  ```
-- Proceed through prompts in the terminal. The bot will ask questions, expect your input or choices, and may open tickets.
+### Using the debug mode
+
+```bash
+python src/main.py --debug
+```
+
+### Changing the used GloVe model
+
+```bash
+python src/main.py --glove-dims 50
+```
+- `--glove-dims`: One of `50`, `100`, `200`, or `300`. The default is `100`.
 
 ### Visualizing the Chat Flow
 
@@ -233,4 +259,4 @@ Ensure all new code is covered by tests.
 
 ## License
 
-This project is released under the MIT License. See [LICENSE](LICENSE) for details.
+This project is released under the MIT License.
