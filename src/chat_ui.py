@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html, Input, Output, State, ALL, MATCH, ctx
+from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 
 # ensure project src on path
@@ -20,17 +21,19 @@ nodes         = load_node_map(db_path)
 chat_engine   = Chat(GraphReplier(nodes["start"]), StringMatcher())
 
 # --- Dash app setup ---
+initial_nodes = chat_engine.advance("")
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container([
     html.H2("Dash Chatbot UI"),
-    dcc.Store(id="history", data=[]),
+    dbc.Button("Reset", id="reset-btn", color="secondary", size="sm", style={"float":"right"}),
+    dcc.Store(id="history", data=[{"sender": "bot", "text": node.content} for node in initial_nodes]),
     html.Div(id="chat-window", style={
         "border":"1px solid #ccc",
         "height":"400px", "overflowY":"auto", "padding":"10px", "marginBottom":"1rem"
     }),
     dbc.Row([
-        dbc.Col(dcc.Input(id="user-input", type="text", placeholder="Type here…",
-                          debounce=True, style={"width":"100%"}), width=10),
+        dbc.Col(dcc.Input(id="user-input", type="text", value="", placeholder="Type here…",
+                          debounce=True, autoFocus=True, style={"width":"100%"}), width=10),
         dbc.Col(dbc.Button("Send", id="send-btn", color="primary"), width=2),
     ], align="center"),
     html.Div(id="suggestions", style={"marginTop":"0.5rem", "fontSize":"0.9em", "color":"#666"})
@@ -40,17 +43,26 @@ app.layout = dbc.Container([
 
 # -- on send: update history, advance chat_engine, clear input
 @app.callback(
-    Output("history",    "data"),
+    Output("history", "data"),
     Output("user-input", "value"),
-    Input("send-btn",    "n_clicks"),
-    State("user-input",  "value"),
-    State("history",     "data"),
-    prevent_initial_call=True
+    Input("send-btn", "n_clicks"),
+    Input("user-input", "n_submit"),
+    Input("reset-btn", "n_clicks"),
+    State("user-input", "value"),
+    State("history", "data"),
+    prevent_initial_call=True,
+    allow_duplicate=True
 )
-def on_send(n, text, history):
-    if not text or not text.strip():
-        return history, ""
-    # record user
+def on_send(send_clicks, submit, reset_clicks, text, history):
+    # handle reset
+    triggered = ctx.triggered_id
+    if triggered == 'reset-btn':
+        chat_engine.__init__(GraphReplier(nodes['start']), StringMatcher())  # reset engine
+        return [], ''
+    # on initial greeting or submit/send
+    if triggered in ('send-btn', 'user-input') and (not text or not text.strip()):
+        return history, ''
+    # record user and bot
     history = history + [{"sender":"user", "text":text}]
     # advance bot
     next_nodes = chat_engine.advance(text)
