@@ -6,6 +6,7 @@ import dash
 from dash import html, dcc
 import dash_cytoscape as cyto
 import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output, State
 cyto.load_extra_layouts()
 
 # Button style constants for callbacks
@@ -13,22 +14,6 @@ ADD_BTN_STYLE = {'display':'inline-block', 'marginRight': '5px'}
 UPDATE_BTN_STYLE = {'display':'inline-block', 'marginRight': '5px'}
 CANCEL_BTN_STYLE = {'display':'inline-block'}
 HIDE_STYLE = {'display':'none'}
-
-from dash.dependencies import Input, Output, State
-
-# Add the src directory to the Python path if needed
-src_dir = os.path.dirname(os.path.abspath(__file__))
-if src_dir not in sys.path:
-    sys.path.append(src_dir)
-
-# Add the docs directory to the Python path if needed
-docs_dir = os.path.join(src_dir, "..", "docs")
-if docs_dir not in sys.path:
-    sys.path.append(docs_dir)
-
-# We'll import ChatNode directly - do this before any chatbot module imports
-# to avoid circular dependencies
-from chatbot import ChatNode
 
 def run_interactive(db_path, host='127.0.0.1', port=8050):
     """Launch Dash-based interactive graph editor."""
