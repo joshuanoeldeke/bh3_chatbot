@@ -35,7 +35,7 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
             elements.append({'data': {'source': src, 'target': tgt}})
         return elements
 
-    app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP, "https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"])
     # --- Layout Definition
     app.layout = dbc.Container([
         dbc.Row([
@@ -115,40 +115,93 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         ], className="mb-4"),
         dbc.Row([
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Add Node"),
+                dbc.CardHeader([
+                    html.Span("Add Node", className="me-2"),
+                    html.I(className="bi bi-plus-circle text-primary")
+                ]),
                 dbc.CardBody([
-                    dcc.Input(id='new-node-name', placeholder='Name', className='form-control mb-2'),
-                    dcc.Input(id='new-node-content', placeholder='Content', className='form-control mb-2'),
-                    dcc.Dropdown(id='new-node-type', options=[
-                        {'label': 'Output (bot)', 'value': 'o'},
-                        {'label': 'Input (user)', 'value': 'i'},
-                        {'label': 'Choice', 'value': 'c'}
-                    ], placeholder='Type', className='mb-2'),
                     html.Div([
-                        html.Button('Add Node', id='add-node-button', className='btn btn-primary', style={'marginRight':'5px'}),
-                        html.Button('Update Node', id='update-node-button', className='btn btn-secondary', style={'display':'none','marginRight':'5px'}),
-                        html.Button('Cancel', id='cancel-node-button', className='btn btn-link', style={'display':'none'})
+                        dbc.Label(["Node Name ",
+                            html.I(className="bi bi-question-circle ms-1", id="help-node-name", style={"cursor": "pointer"})
+                        ], html_for="new-node-name"),
+                        dcc.Input(id='new-node-name', placeholder='Name', className='form-control mb-2'),
+                        dbc.Tooltip("Unique identifier for the node.", target="help-node-name", placement="right")
+                    ], className='mb-2'),
+                    html.Div([
+                        dbc.Label(["Node Content ",
+                            html.I(className="bi bi-question-circle ms-1", id="help-node-content", style={"cursor": "pointer"})
+                        ], html_for="new-node-content"),
+                        dcc.Input(id='new-node-content', placeholder='Content', className='form-control mb-2'),
+                        dbc.Tooltip("What the bot/user says or enters.", target="help-node-content", placement="right")
+                    ], className='mb-2'),
+                    html.Div([
+                        dbc.Label(["Node Type ",
+                            html.I(className="bi bi-question-circle ms-1", id="help-node-type", style={"cursor": "pointer"})
+                        ], html_for="new-node-type"),
+                        dcc.Dropdown(id='new-node-type', options=[
+                            {'label': 'Output (bot)', 'value': 'o'},
+                            {'label': 'Input (user)', 'value': 'i'},
+                            {'label': 'Choice', 'value': 'c'}
+                        ], placeholder='Type', className='mb-2'),
+                        dbc.Tooltip("Choose the type of node.", target="help-node-type", placement="right")
+                    ], className='mb-2'),
+                    html.Div([
+                        html.Button([
+                            html.I(className="bi bi-plus-lg me-1"), "Add Node"
+                        ], id='add-node-button', className='btn btn-primary w-100 mb-2'),
+                        html.Button([
+                            html.I(className="bi bi-pencil-square me-1"), "Update Node"
+                        ], id='update-node-button', className='btn btn-secondary w-100 mb-2', style={'display':'none'}),
+                        html.Button([
+                            html.I(className="bi bi-x-circle me-1"), "Cancel"
+                        ], id='cancel-node-button', className='btn btn-link w-100', style={'display':'none'})
                     ])
                 ])
-            ]), md=4),
+            ]), md=4, className="mb-3"),
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Add Edge"),
+                dbc.CardHeader([
+                    html.Span("Add Edge", className="me-2"),
+                    html.I(className="bi bi-arrow-right-circle text-primary")
+                ]),
                 dbc.CardBody([
-                    dcc.Dropdown(id='edge-source', options=[], placeholder='Source', className='mb-2'),
-                    dcc.Dropdown(id='edge-target', options=[], placeholder='Target', className='mb-2'),
                     html.Div([
-                        html.Button('Add Edge', id='add-edge-button', className='btn btn-primary', style={'marginRight':'5px'}),
-                        html.Button('Update Edge', id='update-edge-button', className='btn btn-secondary', style={'display':'none','marginRight':'5px'}),
-                        html.Button('Cancel', id='cancel-edge-button', className='btn btn-link', style={'display':'none'})
+                        dbc.Label(["Source Node ",
+                            html.I(className="bi bi-question-circle ms-1", id="help-edge-source", style={"cursor": "pointer"})
+                        ], html_for="edge-source"),
+                        dcc.Dropdown(id='edge-source', options=[], placeholder='Source', className='mb-2'),
+                        dbc.Tooltip("Start of the connection.", target="help-edge-source", placement="right")
+                    ], className='mb-2'),
+                    html.Div([
+                        dbc.Label(["Target Node ",
+                            html.I(className="bi bi-question-circle ms-1", id="help-edge-target", style={"cursor": "pointer"})
+                        ], html_for="edge-target"),
+                        dcc.Dropdown(id='edge-target', options=[], placeholder='Target', className='mb-2'),
+                        dbc.Tooltip("End of the connection.", target="help-edge-target", placement="right")
+                    ], className='mb-2'),
+                    html.Div([
+                        html.Button([
+                            html.I(className="bi bi-plus-lg me-1"), "Add Edge"
+                        ], id='add-edge-button', className='btn btn-primary w-100 mb-2'),
+                        html.Button([
+                            html.I(className="bi bi-pencil-square me-1"), "Update Edge"
+                        ], id='update-edge-button', className='btn btn-secondary w-100 mb-2', style={'display':'none'}),
+                        html.Button([
+                            html.I(className="bi bi-x-circle me-1"), "Cancel"
+                        ], id='cancel-edge-button', className='btn btn-link w-100', style={'display':'none'})
                     ])
                 ])
-            ]), md=4),
+            ]), md=4, className="mb-3"),
             dbc.Col(dbc.Card([
-                dbc.CardHeader("Delete Selected"),
+                dbc.CardHeader([
+                    html.Span("Delete Selected", className="me-2"),
+                    html.I(className="bi bi-trash text-danger")
+                ]),
                 dbc.CardBody([
-                    html.Button('Delete Selected', id='delete-button', className='btn btn-danger')
+                    html.Button([
+                        html.I(className="bi bi-trash me-1"), "Delete Selected"
+                    ], id='delete-button', className='btn btn-danger w-100')
                 ])
-            ]), md=4)
+            ]), md=4, className="mb-3")
         ], className="mb-4"),
         dbc.Row(dbc.Col(html.Div(id='callback-message'), width=12))
     ], fluid=True)
