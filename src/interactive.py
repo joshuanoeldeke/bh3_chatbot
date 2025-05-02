@@ -63,6 +63,12 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
                 {'label': 'Top to Bottom', 'value': 'TB'},
                 {'label': 'Left to Right', 'value': 'LR'}
             ], value='LR', clearable=False, className='mb-2'),
+            html.Button([
+                html.I(className="bi bi-arrow-counterclockwise me-1"), "Reset to Default"
+            ], id="reset-settings", className="btn btn-outline-warning w-100 mt-3"),
+            html.Button([
+                html.I(className="bi bi-arrow-clockwise me-1"), "Reset Graph to Default"
+            ], id="reset-graph-default", className="btn btn-danger w-100 mt-2")
         ], id="settings-offcanvas", title="Settings", is_open=False, placement="end", style={"width": "350px"}),
         dbc.Row([
             dbc.Col(
@@ -148,13 +154,19 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
                     html.Div([
                         html.Button([
                             html.I(className="bi bi-plus-lg me-1"), "Add Node"
-                        ], id='add-node-button', className='btn btn-primary w-100 mb-2'),
+                        ], id='add-node-button', className='btn btn-secondary w-100 mb-2', disabled=True),
                         html.Button([
                             html.I(className="bi bi-pencil-square me-1"), "Update Node"
-                        ], id='update-node-button', className='btn btn-secondary w-100 mb-2', style={'display':'none'}),
+                        ], id='update-node-button', className='btn btn-primary w-100 mb-2', style={'display':'none'}),
                         html.Button([
                             html.I(className="bi bi-x-circle me-1"), "Cancel"
-                        ], id='cancel-node-button', className='btn btn-link w-100', style={'display':'none'})
+                        ], id='cancel-node-button', className='btn btn-link w-100', style={'display':'none'}),
+                        html.Button([
+                            html.I(className="bi bi-arrow-counterclockwise me-1"), "Reset to Default"
+                        ], id='reset-node-default', className='btn btn-outline-warning w-100 mb-2', style={'display':'none'}, disabled=True),
+                        html.Button([
+                            html.I(className="bi bi-trash me-1"), "Delete Node"
+                        ], id='delete-node-button', className='btn btn-danger w-100', style={'display':'none'})
                     ])
                 ])
             ]), md=4, className="mb-3"),
@@ -181,27 +193,30 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
                     html.Div([
                         html.Button([
                             html.I(className="bi bi-plus-lg me-1"), "Add Edge"
-                        ], id='add-edge-button', className='btn btn-primary w-100 mb-2'),
+                        ], id='add-edge-button', className='btn btn-secondary w-100 mb-2', disabled=True),
                         html.Button([
                             html.I(className="bi bi-pencil-square me-1"), "Update Edge"
-                        ], id='update-edge-button', className='btn btn-secondary w-100 mb-2', style={'display':'none'}),
+                        ], id='update-edge-button', className='btn btn-primary w-100 mb-2', style={'display':'none'}),
                         html.Button([
                             html.I(className="bi bi-x-circle me-1"), "Cancel"
-                        ], id='cancel-edge-button', className='btn btn-link w-100', style={'display':'none'})
+                        ], id='cancel-edge-button', className='btn btn-link w-100', style={'display':'none'}),
+                        html.Button([
+                            html.I(className="bi bi-trash me-1"), "Delete Edge"
+                        ], id='delete-edge-button', className='btn btn-danger w-100', style={'display':'none'})
                     ])
                 ])
             ]), md=4, className="mb-3"),
             dbc.Col(dbc.Card([
                 dbc.CardHeader([
-                    html.Span("Delete Selected", className="me-2"),
-                    html.I(className="bi bi-trash text-danger")
+                    html.Span("Reset Graph to Default", className="me-2"),
+                    html.I(className="bi bi-arrow-clockwise text-danger")
                 ]),
                 dbc.CardBody([
                     html.Button([
-                        html.I(className="bi bi-trash me-1"), "Delete Selected"
-                    ], id='delete-button', className='btn btn-danger w-100')
+                        html.I(className="bi bi-arrow-clockwise me-1"), "Reset Graph to Default"
+                    ], id="reset-graph-default", className="btn btn-danger w-100")
                 ])
-            ]), md=4, className="mb-3")
+            ]), md=4, className="mb-3"),
         ], className="mb-4"),
         dbc.Row(dbc.Col(html.Div(id='callback-message'), width=12))
     ], fluid=True)
@@ -214,9 +229,11 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
          Output('callback-message', 'children')],
         [Input('add-node-button', 'n_clicks'),
          Input('add-edge-button', 'n_clicks'),
-         Input('delete-button', 'n_clicks'),
+         Input('delete-node-button', 'n_clicks'),
+         Input('delete-edge-button', 'n_clicks'),
          Input('update-node-button', 'n_clicks'),
-         Input('update-edge-button', 'n_clicks')],
+         Input('update-edge-button', 'n_clicks'),
+         Input('reset-graph-default', 'n_clicks')],
         [State('new-node-name', 'value'),
          State('new-node-content', 'value'),
          State('new-node-type', 'value'),
@@ -225,7 +242,7 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
          State('cytoscape', 'selectedNodeData'),
          State('cytoscape', 'selectedEdgeData')]
     )
-    def update_graph(n_node, n_edge, n_delete, n_update_node, n_update_edge, name, content, typ, src, tgt, sel_nodes, sel_edges):
+    def update_graph(n_node, n_edge, n_delete_node, n_delete_edge, n_update_node, n_update_edge, n_reset_graph, name, content, typ, src, tgt, sel_nodes, sel_edges):
         triggered = dash.callback_context.triggered
         msg = ''
         if not triggered:
@@ -233,6 +250,21 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         trigger_id = triggered[0]['prop_id'].split('.')[0]
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
+        # Reset graph to default
+        if trigger_id == 'reset-graph-default':
+            try:
+                c.execute("DELETE FROM chat_edges")
+                c.execute("DELETE FROM chat_nodes")
+                c.execute("INSERT INTO chat_nodes SELECT * FROM default_chat_nodes")
+                c.execute("INSERT INTO chat_edges (from_name, to_name) SELECT from_name, to_name FROM default_chat_edges")
+                conn.commit()
+                msg = "Graph reset to default!"
+            except Exception as e:
+                msg = f"Error resetting graph: {e}"
+            conn.close()
+            elements = get_elements()
+            opts = get_node_options()
+            return elements, opts, opts, msg
         # Update node
         if trigger_id == 'update-node-button' and sel_nodes:
             old = sel_nodes[0]['id']
@@ -261,30 +293,28 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
                 msg = f"Edge '{src}' -> '{tgt}' added."
             except Exception as e:
                 msg = str(e)
-        # Delete selected nodes and/or edges
-        elif trigger_id == 'delete-button':
-            # Delete nodes
-            if sel_nodes:
-                for node in sel_nodes:
-                    nm = node.get('id')
-                    c.execute("DELETE FROM chat_edges WHERE from_name=? OR to_name=?", (nm, nm))
-                    c.execute("DELETE FROM chat_nodes WHERE name=?", (nm,))
-                conn.commit()
-                msg = f"Deleted nodes {[n.get('id') for n in sel_nodes]}."
-            # Delete edges
-            if sel_edges:
-                for edge in sel_edges:
-                    s = edge.get('source'); t = edge.get('target')
-                    c.execute("DELETE FROM chat_edges WHERE from_name=? AND to_name=?", (s, t))
-                conn.commit()
-                msg = (msg + ' ' if msg else '') + f"Deleted edges {[(e.get('source'), e.get('target')) for e in sel_edges]}."
+        # Delete selected nodes
+        elif trigger_id == 'delete-node-button' and sel_nodes:
+            for node in sel_nodes:
+                nm = node.get('id')
+                c.execute("DELETE FROM chat_edges WHERE from_name=? OR to_name=?", (nm, nm))
+                c.execute("DELETE FROM chat_nodes WHERE name=?", (nm,))
+            conn.commit()
+            msg = f"Deleted nodes {[n.get('id') for n in sel_nodes]}."
+        # Delete selected edges
+        elif trigger_id == 'delete-edge-button' and sel_edges:
+            for edge in sel_edges:
+                s = edge.get('source'); t = edge.get('target')
+                c.execute("DELETE FROM chat_edges WHERE from_name=? AND to_name=?", (s, t))
+            conn.commit()
+            msg = f"Deleted edges {[(e.get('source'), e.get('target')) for e in sel_edges]}."
         conn.close()
         # Refresh display
         elements = get_elements()
         opts = get_node_options()
         return elements, opts, opts, msg
 
-    # Unified callback to manage node form (select, cancel)
+    # Unified callback to manage node form (select, cancel, reset-to-default)
     @app.callback(
         [Output('new-node-name','value'),
          Output('new-node-content','value'),
@@ -292,21 +322,38 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
          Output('add-node-button','style'),
          Output('update-node-button','style'),
          Output('cancel-node-button','style'),
+         Output('delete-node-button','style'),
          Output('cytoscape','selectedNodeData')],
         [Input('cytoscape','selectedNodeData'),
-         Input('cancel-node-button','n_clicks')]
+         Input('cancel-node-button','n_clicks'),
+         Input('reset-node-default', 'n_clicks')],
+        [State('cytoscape','selectedNodeData')],
+        prevent_initial_call=False
     )
-    def handle_node_form(sel, cancel_clicks):
+    def handle_node_form(sel, cancel_clicks, reset_clicks, sel_state):
         ctx = dash.callback_context
         # Cancel action
         if ctx.triggered and ctx.triggered[0]['prop_id'].startswith('cancel-node-button'):
-            return '', '', None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
+            return '', '', None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, HIDE_STYLE, []
+        # Reset to default action
+        if ctx.triggered and ctx.triggered[0]['prop_id'].startswith('reset-node-default'):
+            if sel_state and len(sel_state) == 1:
+                node_name = sel_state[0]['id']
+                conn = sqlite3.connect(db_path)
+                c = conn.cursor()
+                c.execute("SELECT content, type FROM default_chat_nodes WHERE name=?", (node_name,))
+                row = c.fetchone()
+                conn.close()
+                if row:
+                    return node_name, row[0], row[1], HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, HIDE_STYLE, sel_state
+            # If no default, just keep current
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update, dash.no_update
         # Node selected
         if sel and len(sel)==1:
             node = sel[0]
-            return node['id'], node['label'], node.get('type'), HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, sel
+            return node['id'], node['label'], node.get('type'), HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, {'display': 'inline-block'}, sel
         # Default create mode
-        return '', '', None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
+        return '', '', None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, HIDE_STYLE, []
 
     # Unified callback to manage edge form (select, cancel)
     @app.callback(
@@ -315,6 +362,7 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
          Output('add-edge-button','style'),
          Output('update-edge-button','style'),
          Output('cancel-edge-button','style'),
+         Output('delete-edge-button','style'),
          Output('cytoscape','selectedEdgeData')],
         [Input('cytoscape','selectedEdgeData'),
          Input('cancel-edge-button','n_clicks')]
@@ -323,13 +371,13 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         ctx = dash.callback_context
         # Cancel action
         if ctx.triggered and ctx.triggered[0]['prop_id'].startswith('cancel-edge-button'):
-            return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
+            return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, HIDE_STYLE, []
         # Edge selected
         if sel and len(sel)==1:
             e = sel[0]
-            return e['source'], e['target'], HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, sel
+            return e['source'], e['target'], HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, {'display': 'inline-block'}, sel
         # Default create mode
-        return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
+        return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, HIDE_STYLE, []
     
     @app.callback(
         [Output('cytoscape', 'stylesheet'),
@@ -387,6 +435,65 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         }
         return stylesheet, layout
 
+    # Enable Add Node button only when all fields are filled
+    @app.callback(
+        [Output('add-node-button', 'className'), Output('add-node-button', 'disabled')],
+        [Input('new-node-name', 'value'), Input('new-node-content', 'value'), Input('new-node-type', 'value'),
+         Input('add-node-button', 'style'), Input('update-node-button', 'style')]
+    )
+    def set_add_node_btn_class(name, content, typ, add_style, update_style):
+        # Only enable and color blue if all fields are filled and not in update mode
+        if (add_style.get('display', 'inline-block') != 'none'):
+            if all([name, content, typ]):
+                return 'btn btn-primary w-100 mb-2', False
+            else:
+                return 'btn btn-secondary w-100 mb-2', True
+        # In update mode, always keep add button grey and disabled
+        return 'btn btn-secondary w-100 mb-2', True
+
+    # Enable Add Edge button only when both fields are filled and source != target
+    @app.callback(
+        [Output('add-edge-button', 'className'), Output('add-edge-button', 'disabled')],
+        [Input('edge-source', 'value'), Input('edge-target', 'value'),
+         Input('add-edge-button', 'style'), Input('update-edge-button', 'style')]
+    )
+    def set_add_edge_btn_class(src, tgt, add_style, update_style):
+        if (add_style.get('display', 'inline-block') != 'none'):
+            if src and tgt and src != tgt:
+                return 'btn btn-primary w-100 mb-2', False
+            else:
+                return 'btn btn-secondary w-100 mb-2', True
+        # In update mode, always keep add button grey and disabled
+        return 'btn btn-secondary w-100 mb-2', True
+
+    # Enable Update Node button only when all fields are filled and in update mode
+    @app.callback(
+        [Output('update-node-button', 'className'), Output('update-node-button', 'disabled')],
+        [Input('new-node-name', 'value'), Input('new-node-content', 'value'), Input('new-node-type', 'value'),
+         Input('update-node-button', 'style')]
+    )
+    def set_update_node_btn_class(name, content, typ, update_style):
+        if update_style.get('display', 'none') != 'none':
+            if all([name, content, typ]):
+                return 'btn btn-primary w-100 mb-2', False
+            else:
+                return 'btn btn-secondary w-100 mb-2', True
+        return 'btn btn-secondary w-100 mb-2', True
+
+    # Enable Update Edge button only when both fields are filled and in update mode
+    @app.callback(
+        [Output('update-edge-button', 'className'), Output('update-edge-button', 'disabled')],
+        [Input('edge-source', 'value'), Input('edge-target', 'value'),
+         Input('update-edge-button', 'style')]
+    )
+    def set_update_edge_btn_class(src, tgt, update_style):
+        if update_style.get('display', 'none') != 'none':
+            if src and tgt:
+                return 'btn btn-primary w-100 mb-2', False
+            else:
+                return 'btn btn-secondary w-100 mb-2', True
+        return 'btn btn-secondary w-100 mb-2', True
+
     # Settings menu open/close callbacks (offcanvas)
     @app.callback(
         Output("settings-offcanvas", "is_open"),
@@ -401,6 +508,39 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         if btn_id == "open-settings":
             return True
         return is_open
+
+    @app.callback(
+        [Output('node-width', 'value'),
+         Output('node-height', 'value'),
+         Output('font-size', 'value'),
+         Output('node-sep', 'value'),
+         Output('rank-sep', 'value'),
+         Output('layout-dir', 'value')],
+        [Input('reset-settings', 'n_clicks')],
+        prevent_initial_call=True
+    )
+    def reset_settings(n):
+        # Defaults: width=120, height=60, font=15, nodeSep=80, rankSep=120, layoutDir='LR'
+        return 120, 60, 15, 80, 120, 'LR'
+
+    # Enable/disable and show/hide Reset to Default button for node
+    @app.callback(
+        [Output('reset-node-default', 'style'), Output('reset-node-default', 'disabled')],
+        [Input('cytoscape', 'selectedNodeData')]
+    )
+    def show_reset_node_btn(sel):
+        if sel and len(sel) == 1:
+            node_name = sel[0]['id']
+            conn = sqlite3.connect(db_path)
+            c = conn.cursor()
+            c.execute("SELECT 1 FROM default_chat_nodes WHERE name=?", (node_name,))
+            exists = c.fetchone() is not None
+            conn.close()
+            if exists:
+                return ({'display': 'inline-block'}, False)
+            else:
+                return ({'display': 'inline-block'}, True)
+        return ({'display': 'none'}, True)
 
     def get_node_options():
         el = get_elements()
