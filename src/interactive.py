@@ -7,6 +7,13 @@ from dash import html, dcc
 import dash_cytoscape as cyto
 import dash_bootstrap_components as dbc
 cyto.load_extra_layouts()
+
+# Button style constants for callbacks
+ADD_BTN_STYLE = {'display':'inline-block', 'marginRight': '5px'}
+UPDATE_BTN_STYLE = {'display':'inline-block', 'marginRight': '5px'}
+CANCEL_BTN_STYLE = {'display':'inline-block'}
+HIDE_STYLE = {'display':'none'}
+
 from dash.dependencies import Input, Output, State
 
 # Add the src directory to the Python path if needed
@@ -25,6 +32,7 @@ from chatbot import ChatNode
 
 def run_interactive(db_path, host='127.0.0.1', port=8050):
     """Launch Dash-based interactive graph editor."""
+    # --- Data Helpers
     def get_elements():
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
@@ -39,6 +47,7 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         return elements
 
     app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+    # --- Layout Definition
     app.layout = dbc.Container([
         dbc.Row(dbc.Col(html.H1("Interactive Chat Graph Editor"), width=12), className="mt-4 mb-2"),
         dbc.Row(dbc.Col(
@@ -104,6 +113,7 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         dbc.Row(dbc.Col(html.Div(id='callback-message'), width=12))
     ], fluid=True)
 
+    # --- Callback Definitions
     @app.callback(
         [Output('cytoscape', 'elements'),
          Output('edge-source', 'options'),
@@ -195,19 +205,15 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
     )
     def handle_node_form(sel, cancel_clicks):
         ctx = dash.callback_context
-        add_style = {'display':'inline-block','marginRight':'5px'}
-        hide_style = {'display':'none'}
-        update_style = {'display':'inline-block','marginRight':'5px'}
-        cancel_style = {'display':'inline-block'}
         # Cancel action
         if ctx.triggered and ctx.triggered[0]['prop_id'].startswith('cancel-node-button'):
-            return '', '', None, add_style, hide_style, hide_style, []
+            return '', '', None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
         # Node selected
         if sel and len(sel)==1:
             node = sel[0]
-            return node['id'], node['label'], node.get('type'), hide_style, update_style, cancel_style, sel
+            return node['id'], node['label'], node.get('type'), HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, sel
         # Default create mode
-        return '', '', None, add_style, hide_style, hide_style, []
+        return '', '', None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
 
     # Unified callback to manage edge form (select, cancel)
     @app.callback(
@@ -222,19 +228,15 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
     )
     def handle_edge_form(sel, cancel_clicks):
         ctx = dash.callback_context
-        add_style = {'display':'inline-block','marginRight':'5px'}
-        hide_style = {'display':'none'}
-        update_style = {'display':'inline-block','marginRight':'5px'}
-        cancel_style = {'display':'inline-block'}
         # Cancel action
         if ctx.triggered and ctx.triggered[0]['prop_id'].startswith('cancel-edge-button'):
-            return None, None, add_style, hide_style, hide_style, []
+            return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
         # Edge selected
         if sel and len(sel)==1:
             e = sel[0]
-            return e['source'], e['target'], hide_style, update_style, cancel_style, sel
+            return e['source'], e['target'], HIDE_STYLE, UPDATE_BTN_STYLE, CANCEL_BTN_STYLE, sel
         # Default create mode
-        return None, None, add_style, hide_style, hide_style, []
+        return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
     
     def get_node_options():
         el = get_elements()

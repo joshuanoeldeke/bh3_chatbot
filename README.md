@@ -12,6 +12,7 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 - [Database Initialization](#database-initialization)
 - [Project Structure](#project-structure)
 - [Usage](#usage)
+  - [Interactive Graph Editor](#interactive-graph-editor)
   - [Running the Chatbot](#running-the-chatbot)
   - [Visualizing the Chat Flow](#visualizing-the-chat-flow)
 - [Running Tests](#running-tests)
@@ -197,6 +198,20 @@ Ensure the file `data/bugland.db` exists before running the chatbot or visualiza
 ```
 
 ## Usage
+
+### Interactive Graph Editor
+
+Launch the web-based editor to visually inspect and modify the conversation graph stored in SQLite.
+```bash
+python src/interactive.py
+```
+- Opens at http://127.0.0.1:8050 by default.
+- Click nodes or edges to edit their properties (content, type, connections).
+- Use the form panel to Add, Update, or Delete nodes and edges.
+- Graph styling: blue = bot output, yellow = user input, green = choice.
+- Changes are persisted immediately to `data/bugland.db`.
+
+You can bind to a different host or port by editing the `run_interactive` call in `interactive.py` or wrapping in a small launcher script.
 
 ### Running the Chatbot
 
