@@ -15,3 +15,9 @@ wrapt==1.17.2
 dash
 dash-cytoscape
 dash_bootstrap_components
+
+# add Flask for serving the chatbot API
+Flask>=2.2.5
+
+# add Flask-Cors for cross-origin support
+Flask-Cors>=3.0.10

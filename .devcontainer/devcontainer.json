@@ -3,17 +3,17 @@
 {
 	"name": "Python 3",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye"
+	"image": "mcr.microsoft.com/devcontainers/python:1-3.12-bullseye",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	// Forward ports for Flask API (5000)
+	"forwardPorts": [5000],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "pip3 install --user -r requirements.txt",
-	,"postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt"
+	"postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt"
 	,"postStartCommand": "sudo apt-get update && sudo apt-get install -y pkg-config libopenblas-dev build-essential graphviz"
 
 	// Configure tool-specific properties.

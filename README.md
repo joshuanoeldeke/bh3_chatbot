@@ -13,8 +13,10 @@ A simple Python-based support chatbot for Bugland Ltd. that uses an SQLite datab
 - [Project Structure](#project-structure)
 - [Usage](#usage)
   - [Interactive Graph Editor](#interactive-graph-editor)
-  - [Running the Chatbot](#running-the-chatbot)
+  - [CLI Chatbot](#cli-chatbot)
+  - [Web Chatbot UI (Flask + React)](#web-chatbot-ui-flask--react)
   - [Visualizing the Chat Flow](#visualizing-the-chat-flow)
+  - [Running Tests](#running-tests)
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
 - [License](#license)
@@ -205,32 +207,20 @@ Launch the web-based editor to visually inspect and modify the conversation grap
 ```bash
 python src/interactive.py
 ```
-- Opens at http://127.0.0.1:8050 by default.
+- Opens at http://127.th0.0.1:8050 by default.
 - Click nodes or edges to edit their properties (content, type, connections).
 - Use the form panel to Add, Update, or Delete nodes and edges.
 - Graph styling: blue = bot output, yellow = user input, green = choice.
 - Changes are persisted immediately to `data/bugland.db`.
 
-You can bind to a different host or port by editing the `run_interactive` call in `interactive.py` or wrapping in a small launcher script.
+### CLI Chatbot
 
-### Running the Chatbot
-
+Run the command‑line interface chatbot:
 ```bash
 python src/main.py
 ```
-
-### Using the debug mode
-
-```bash
-python src/main.py --debug
-```
-
-### Changing the used GloVe model
-
-```bash
-python src/main.py --glove-dims 50
-```
-- `--glove-dims`: One of `50`, `100`, `200`, or `300`. The default is `100`.
+- Add `--debug` to enable verbose logging.
+- Use `--glove-dims <50|100|200|300>` to select an alternate GloVe model size.
 
 ### Visualizing the Chat Flow
 
@@ -238,15 +228,19 @@ A standalone script generates a diagram of the entire conversation flow:
 
 ```bash
 cd src
-python visualize.py \
-  --output chart_output \
-  --format svg
+python visualize.py --output chart_output --format svg
 ```
-
 - `--output`: Filename (without extension) for the generated diagram.
 - `--format`: One of `png`, `svg`, or `pdf`.
 
 The output file will be placed in the `docs/` directory by default.
+
+### Running Tests
+
+This project uses `pytest`. To run all tests:
+```bash
+pytest
+```
 
 ## Running Tests
 
