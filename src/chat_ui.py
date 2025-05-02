@@ -21,12 +21,12 @@ nodes         = load_node_map(db_path)
 chat_engine   = Chat(GraphReplier(nodes["start"]), StringMatcher())
 
 # --- Dash app setup ---
-initial_nodes = chat_engine.advance("")
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = dbc.Container([
     html.H2("Dash Chatbot UI"),
     dbc.Button("Reset", id="reset-btn", color="secondary", size="sm", style={"float":"right"}),
-    dcc.Store(id="history", data=[{"sender": "bot", "text": node.content} for node in initial_nodes]),
+    dcc.Store(id="history", data=[]),
+    dcc.Interval(id="init-interval", interval=1, n_intervals=0, max_intervals=1),
     html.Div(id="chat-window", style={
         "border":"1px solid #ccc",
         "height":"400px", "overflowY":"auto", "padding":"10px", "marginBottom":"1rem"
@@ -41,33 +41,38 @@ app.layout = dbc.Container([
 
 # --- callbacks ---
 
-# -- on send: update history, advance chat_engine, clear input
+# unified callback for init, reset, send, submit, suggestion clicks
 @app.callback(
     Output("history", "data"),
     Output("user-input", "value"),
+    Input("init-interval", "n_intervals"),
     Input("send-btn", "n_clicks"),
     Input("user-input", "n_submit"),
     Input("reset-btn", "n_clicks"),
+    Input({"type": "suggest", "value": ALL}, "n_clicks"),
     State("user-input", "value"),
     State("history", "data"),
-    prevent_initial_call=True,
-    allow_duplicate=True
+    prevent_initial_call=False
 )
-def on_send(send_clicks, submit, reset_clicks, text, history):
-    # handle reset
+def update_chat(init_n, send_clicks, submit, reset_clicks, suggest_clicks, text, history):
     triggered = ctx.triggered_id
-    if triggered == 'reset-btn':
-        chat_engine.__init__(GraphReplier(nodes['start']), StringMatcher())  # reset engine
-        return [], ''
-    # on initial greeting or submit/send
-    if triggered in ('send-btn', 'user-input') and (not text or not text.strip()):
-        return history, ''
-    # record user and bot
-    history = history + [{"sender":"user", "text":text}]
-    # advance bot
+    # initialize or reset: greet user
+    if triggered == None or triggered == 'init-interval' or triggered == 'reset-btn':
+        chat_engine.__init__(GraphReplier(nodes['start']), StringMatcher())
+        node_list = chat_engine.advance("")
+        return [{"sender":"bot","text":n.content} for n in node_list], ""
+    # suggestion button click
+    if isinstance(triggered, dict) and triggered.get('type') == 'suggest':
+        text = triggered.get('value', '')
+    # send or enter key
+    if triggered in ('send-btn', 'user-input'):
+        if not text or not text.strip():
+            return history or [], ""
+    # process user message
+    history = (history or []) + [{"sender":"user","text":text}]
     next_nodes = chat_engine.advance(text)
     for n in next_nodes:
-        history.append({"sender":"bot", "text": n.content})
+        history.append({"sender":"bot","text":n.content})
     return history, ""
 
 # -- render chat window from history store
@@ -93,15 +98,26 @@ def render_chat(h):
     Input("user-input", "value")
 )
 def suggest(text):
+    # Only show options from choice nodes
     opts = []
     prefix = (text or "").lower()
     for node in chat_engine.current_nodes:
-        key = node.content.split(";")[0]
-        if not prefix or key.lower().startswith(prefix):
-            opts.append(key)
+        if node.type != 'c':
+            continue
+        # split multiple labels on semicolon
+        for opt in node.content.split(';'):
+            if not prefix or opt.lower().startswith(prefix):
+                opts.append(opt)
     if not opts:
-        return "no suggestions"
-    return html.Span("Suggestions: " + ", ".join(opts))
+        return html.Div("no suggestions", style={"color":"#888"})
+    # render clickable suggestion buttons
+    buttons = []
+    for opt in opts:
+        btn_id = {'type': 'suggest', 'value': opt}
+        buttons.append(
+            dbc.Button(opt, id=btn_id, size="sm", color="secondary", className="me-1")
+        )
+    return html.Div(buttons)
 
 if __name__=="__main__":
     app.run(debug=True, host="0.0.0.0", port=8051)
