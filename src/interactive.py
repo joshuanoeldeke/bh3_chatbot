@@ -26,7 +26,11 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         conn.close()
         elements = []
         for name, content, typ in nodes:
-            elements.append({'data': {'id': name, 'label': content, 'type': typ}})
+            if typ == 'i' and (content is None or content.strip() == ''):
+                label = 'User input required'
+            else:
+                label = content
+            elements.append({'data': {'id': name, 'label': label, 'type': typ}})
         for src, tgt in edges:
             elements.append({'data': {'source': src, 'target': tgt}})
         return elements
