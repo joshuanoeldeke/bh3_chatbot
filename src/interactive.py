@@ -34,30 +34,81 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
     app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
     # --- Layout Definition
     app.layout = dbc.Container([
-        dbc.Row(dbc.Col(html.H1("Interactive Chat Graph Editor"), width=12), className="mt-4 mb-2"),
-        dbc.Row(dbc.Col(
-            cyto.Cytoscape(
-                id='cytoscape',
-                elements=get_elements(),
-                layout={'name': 'dagre'},
-                stylesheet=[
-                    {'selector': 'node', 'style': {
-                        'label': 'data(label)', 'text-wrap': 'wrap', 'text-valign': 'center',
-                        'text-halign': 'center', 'width': 'label', 'height': 'label', 'background-color': '#eee',
-                        'font-size': '12px', 'padding': '6px'
-                    }},
-                    {'selector': '[type = "o"]', 'style': {'background-color': 'lightblue'}},
-                    {'selector': '[type = "i"]', 'style': {'background-color': 'lightyellow'}},
-                    {'selector': '[type = "c"]', 'style': {'background-color': 'lightgreen'}},
-                    {'selector': 'edge', 'style': {
-                        'curve-style': 'bezier', 'target-arrow-shape': 'triangle', 'arrow-scale': 1.2,
-                        'line-color': '#888'
-                    }},
-                    {'selector': ':selected', 'style': {'background-color': '#fa0', 'line-color': '#fa0'}}
-                ],
-                style={'width': '100%', 'height': '600px'}
-            ), width=12
-        ), className="mb-4"),
+        dbc.Row([
+            dbc.Col(html.H1("Interactive Chat Graph Editor"), width=10),
+            dbc.Col(
+                html.Button("⚙️ Settings", id="open-settings", className="btn btn-outline-secondary", style={"float": "right", "marginTop": "10px"}),
+                width=2
+            )
+        ], className="mt-4 mb-2"),
+        # Settings Offcanvas (sliding sidebar)
+        dbc.Offcanvas([
+            html.H5("Graph Display Settings"),
+            dbc.Label("Node Width (all nodes)"),
+            dcc.Slider(id='node-width', min=60, max=300, step=10, value=120, marks=None, tooltip={"placement": "bottom", "always_visible": True}),
+            dbc.Label("Node Height (all nodes)"),
+            dcc.Slider(id='node-height', min=30, max=200, step=5, value=60, marks=None, tooltip={"placement": "bottom", "always_visible": True}),
+            dbc.Label("Font Size"),
+            dcc.Slider(id='font-size', min=8, max=32, step=1, value=15, marks=None, tooltip={"placement": "bottom", "always_visible": True}),
+            dbc.Label("Horizontal Spacing (nodeSep)"),
+            dcc.Slider(id='node-sep', min=20, max=300, step=10, value=80, marks=None, tooltip={"placement": "bottom", "always_visible": True}),
+            dbc.Label("Vertical Spacing (rankSep)"),
+            dcc.Slider(id='rank-sep', min=40, max=400, step=10, value=120, marks=None, tooltip={"placement": "bottom", "always_visible": True}),
+            dbc.Label("Layout Direction"),
+            dcc.Dropdown(id='layout-dir', options=[
+                {'label': 'Top to Bottom', 'value': 'TB'},
+                {'label': 'Left to Right', 'value': 'LR'}
+            ], value='LR', clearable=False, className='mb-2'),
+        ], id="settings-offcanvas", title="Settings", is_open=False, placement="end", style={"width": "350px"}),
+        dbc.Row([
+            dbc.Col(
+                cyto.Cytoscape(
+                    id='cytoscape',
+                    elements=get_elements(),
+                    layout={
+                        'name': 'dagre',
+                        'nodeSep': 80,
+                        'edgeSep': 40,
+                        'rankSep': 120,
+                        'rankDir': 'TB'
+                    },
+                    stylesheet=[
+                        {'selector': 'node', 'style': {
+                            'label': 'data(label)',
+                            'text-wrap': 'wrap',
+                            'text-valign': 'center',
+                            'text-halign': 'center',
+                            'width': 'label',  # dynamic sizing by default
+                            'height': 'label',
+                            'background-color': '#eee',
+                            'font-size': '15px',
+                            'padding': '12px',
+                            'shape': 'roundrectangle',
+                            'border-width': 2,
+                            'border-color': '#bbb',
+                            'min-zoomed-font-size': 10
+                        }},
+                        {'selector': '[type = "o"]', 'style': {'background-color': 'lightblue'}},
+                        {'selector': '[type = "i"]', 'style': {'background-color': 'lightyellow'}},
+                        {'selector': '[type = "c"]', 'style': {'background-color': 'lightgreen'}},
+                        {'selector': 'edge', 'style': {
+                            'curve-style': 'bezier',
+                            'target-arrow-shape': 'triangle',
+                            'arrow-scale': 1.2,
+                            'line-color': '#888',
+                            'width': 3
+                        }},
+                        {'selector': ':selected', 'style': {
+                            'background-color': '#fa0',
+                            'line-color': '#fa0',
+                            'border-color': '#fa0',
+                            'border-width': 4
+                        }}
+                    ],
+                    style={'width': '100%', 'height': '600px'}
+                ), width=12
+            )
+        ], className="mb-4"),
         dbc.Row([
             dbc.Col(dbc.Card([
                 dbc.CardHeader("Add Node"),
@@ -223,6 +274,77 @@ def run_interactive(db_path, host='127.0.0.1', port=8050):
         # Default create mode
         return None, None, ADD_BTN_STYLE, HIDE_STYLE, HIDE_STYLE, []
     
+    @app.callback(
+        [Output('cytoscape', 'stylesheet'),
+         Output('cytoscape', 'layout')],
+        [Input('node-width', 'value'),
+         Input('node-height', 'value'),
+         Input('font-size', 'value'),
+         Input('node-sep', 'value'),
+         Input('rank-sep', 'value'),
+         Input('layout-dir', 'value')]
+    )
+    def update_cyto_style(node_width, node_height, font_size, node_sep, rank_sep, layout_dir):
+        # If user hasn't changed from default, use dynamic sizing
+        node_w = node_width if node_width != 120 else 'label'
+        node_h = node_height if node_height != 60 else 'label'
+        stylesheet=[
+            {'selector': 'node', 'style': {
+                'label': 'data(label)',
+                'text-wrap': 'wrap',
+                'text-valign': 'center',
+                'text-halign': 'center',
+                'width': node_w,
+                'height': node_h,
+                'background-color': '#eee',
+                'font-size': f'{font_size}px',
+                'padding': '12px',
+                'shape': 'roundrectangle',
+                'border-width': 2,
+                'border-color': '#bbb',
+                'min-zoomed-font-size': 10
+            }},
+            {'selector': '[type = "o"]', 'style': {'background-color': 'lightblue'}},
+            {'selector': '[type = "i"]', 'style': {'background-color': 'lightyellow'}},
+            {'selector': '[type = "c"]', 'style': {'background-color': 'lightgreen'}},
+            {'selector': 'edge', 'style': {
+                'curve-style': 'bezier',
+                'target-arrow-shape': 'triangle',
+                'arrow-scale': 1.2,
+                'line-color': '#888',
+                'width': 3
+            }},
+            {'selector': ':selected', 'style': {
+                'background-color': '#fa0',
+                'line-color': '#fa0',
+                'border-color': '#fa0',
+                'border-width': 4
+            }}
+        ]
+        layout={
+            'name': 'dagre',
+            'nodeSep': node_sep,
+            'edgeSep': 40,
+            'rankSep': rank_sep,
+            'rankDir': layout_dir
+        }
+        return stylesheet, layout
+
+    # Settings menu open/close callbacks (offcanvas)
+    @app.callback(
+        Output("settings-offcanvas", "is_open"),
+        [Input("open-settings", "n_clicks")],
+        [State("settings-offcanvas", "is_open")],
+    )
+    def toggle_settings(open_click, is_open):
+        ctx = dash.callback_context
+        if not ctx.triggered:
+            return is_open
+        btn_id = ctx.triggered[0]["prop_id"].split(".")[0]
+        if btn_id == "open-settings":
+            return True
+        return is_open
+
     def get_node_options():
         el = get_elements()
         nodes = [e['data']['id'] for e in el if 'source' not in e['data']]
