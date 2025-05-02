@@ -64,7 +64,7 @@ def build_layout(db_path):
                             'shape': 'roundrectangle',
                             'border-width': 2,
                             'border-color': '#bbb',
-                            'min-zoomed-font-size': 10
+                            #'min-zoomed-font-size': 10
                         }},
                         {'selector': '[type = "o"]', 'style': {'background-color': 'lightblue'}},
                         {'selector': '[type = "i"]', 'style': {'background-color': 'lightyellow'}},
